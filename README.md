@@ -39,12 +39,14 @@ http://dl.acm.org/citation.cfm?doid=321707.321717
 Sharkbatch allows it's client to input new jobs synchronously between slices of processes.
 When adding a job, specify a new PID, expected execution time, memory required, and
 dependencies. If a job is dependent on some jobs that haven't been finished, sharkbatch
-will hold that job before pushing it to the MLFQ. IF SHARKBATCH DETERMINES THAT A LOW
-PRIORITY JOB IS VITAL TO THE INITIATION OF MANY OTHER JOBS AND IS CLOGGING THE WAITING
-QUEUE, SHARKBATCH WILL AUTOMATICALLY AGE THAT JOB TO THE HIGHEST PRIORITY LEVEL IN
-ORDER TO GIVE IT AN ADVANTAGE OVER THE CPU.*
+will hold that job before pushing it to the MLFQ. You can even enter a dependent
+PID that the scheduler has never seen before.
 
-*still working on this. But from what I've read so far, I haven't found any MLFQ
-schedulers that do this - I think most of them age all processes at the same time on an
-arbitrary interval. This might be because my algorithm greatly increases the ability
-of an application to "game" the scheduler and maliciously monopolize the CPU.
+I am currently working on a way for SharkBatch to determine if some low priority
+job is vital to some important dependency chain of other jobs, and will detect
+this starvation and age the job to high priorities appropriate. So far, I am not
+aware of any OS that does this -- some of them age all jobs depending on some
+arbitrary iteration. Maybe the reason they don't do this is because it would make
+it very easy for an application to "game" the scheduler and monopolize the CPU
+by repeatedly sending dependent jobs. But even then, there are still other ways
+to "game" a MLFQ anyway!
