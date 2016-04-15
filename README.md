@@ -11,9 +11,9 @@ priority levels from the command line, and lets you specify job dependencies as 
 jobs on-the-fly.
 
 ##Install & Run
-Installation:
-$ make
-Run program:
+Installation:<br>
+$ make<br>
+Run program:<br>
 $ ./sharkbatch numberOfQueues<br>
 Where numberOfQueues is a positive integer less than BASE_QUANTUM/DIFF_QUANTUM, where
 BASE_QUANTUM is the time quantum of the lowest level queue priority, and DIFF_QUANTUM
