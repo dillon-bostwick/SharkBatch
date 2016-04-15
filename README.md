@@ -20,18 +20,19 @@ Uninstall:<br>
 Where numberOfQueues is a positive integer less than BASE_QUANTUM/DIFF_QUANTUM, where
 BASE_QUANTUM is the time quantum of the lowest level queue priority, and DIFF_QUANTUM
 is the difference between each adjacent queue priority (you can't go above base/diff
-number of priorities or else you'd get non-positive time slices). Go ahead and experiment
-with the "fairness" of the scheduler directly from the command line!!
+number of priorities or else you'd get non-positive time slices). The point is,
+you can experiment with the "fairness" of the scheduler straight from the command
+line!
 
 ##About the Multilevel Feedback Queue Scheduling Algorithm
 
 Brief introduction to Multilevel Feedback Queues (MLFQ):
 https://en.wikipedia.org/wiki/Multilevel_feedback_queue
 
-Very well-written overview of MLFQs, specifically the one that the Solaris OS uses:
+Good overview of MLFQs, specifically the one that Solaris OS uses:
 http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
 
-Some rather dense literature that will likely leave none of your questions unanswered:
+Some more theoretical stuff about the MLFQ that is worth a skim:
 http://dl.acm.org/citation.cfm?doid=321707.321717
 
 ##About inputting jobs and job dependencies
