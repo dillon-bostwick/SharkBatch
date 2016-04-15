@@ -44,7 +44,7 @@ PID that the scheduler has never seen before.
 
 I am currently working on a way for SharkBatch to determine if some low priority
 job is vital to some important dependency chain of other jobs, and will detect
-this starvation and age the job to high priorities appropriate. So far, I am not
+this starvation automatically and age the job to high priorities. So far, I am not
 aware of any OS that does this -- some of them age all jobs depending on some
 arbitrary iteration. Maybe the reason they don't do this is because it would make
 it very easy for an application to "game" the scheduler and monopolize the CPU
