@@ -42,6 +42,17 @@ void Scheduler::process() {
 	make_job_from_input();
 	
 	while (keepGoing) { 
+	
+		//add from waitingOnMem queue until MAX_MEMORY is reached. This can be a problem
+		//because it always takes from the front of the queue; it does not scroll through
+		//with a greedy algorithm looking for all jobs that are less than max. So if one
+		//job uses all of memory there is a huge problem.
+		while (!waitingOnMem.empty() && 
+		 	   waitingOnMem.front()->get_resources() + memoryUsed <= MAX_MEMORY) {
+			start_processing(waitingOnMem.front());
+			waitingOnMem.pop();
+		}
+	
 		priority = runs.size();
 
 		//set current to the most important job to run and set "priority" to the priority
@@ -55,7 +66,7 @@ void Scheduler::process() {
 		}
 	
 		if (priority == -1) {
-			throw runtime_error("Crashing because no current processes waiting in MLFQ.");
+			throw runtime_error("Crashing because no processes in MLFQ.");
 		}
 			
 		//"run" current (aka decrement the job's remaining execTime) for a time slice that
@@ -116,13 +127,13 @@ void Scheduler::print_status() {
 		cout << "Q" << i << "   ";
 	}
 	
-	cout << endl << "Size:   ";
+	cout << "W" << endl << "Size:   ";
 	
 	for (unsigned i = 0; i < runs.size(); i++) {
 		cout << runs[i].size() << "    ";
 	}
 	
-	cout << endl << "just processed job #" << current->get_pid();
+	cout << waitingOnMem.size() << endl << "just processed job #" << current->get_pid();
 	
 	if (current->get_exec_time() <= 0) {
 		cout << ", which completed in it's allocated CPU time slice." << endl;
@@ -152,7 +163,8 @@ bool  Scheduler::user_input() {
 				lookup_from_input();
 				break;
 			default:
-				throw invalid_argument("Must input from list of characters above");
+				cout << "Must input from list of characters above." << endl;
+				break;
 		}
 	}
 }
@@ -178,15 +190,23 @@ void Scheduler::make_job_from_input() {
 	cin >> execTime;
 	cout << "Resources (KB): ";
 	cin >> resources; 
+	
+	if (resources > MAX_MEMORY) {
+		cout << "Error: this quantity of resources exceeds MAX_MEMORY. You can not process"
+				" this job." << endl;
+		return;	
+	}
+		
 	cout << "List dependencies, type -1 when finished:" << endl;
-	dependencies = read_dependencies();
+	dependencies = read_dependencies_and_age();
 	
 	Job *j = new Job(pid, execTime, resources, dependencies);
 	jobs.insert(j); //put the job into the JobHashTable "jobs"
 	
 	if (dependencies->is_empty()) {
-		//no dependencies -- insert into the MLFQ algorithm for immediate processing
-		start_processing(j);
+		//no dependencies -- insert into the waitingOnMem queue to be inserted into
+		//the MLFQ as soon as there is space
+		waitingOnMem.push(j);
 	} else {
 		//otherwise it needs to enter the waiting heap until it is ready.
 		//We just need to append successors to all the jobs on which this job is
@@ -199,7 +219,7 @@ void Scheduler::make_job_from_input() {
 //Take a list of PIDs from cin. For each PID, check the JobHashTable "jobs" to see
 //whether it is already complete. If it isn't already complete, add it to a IntBST
 //called dependencies. Return a pointer to this IntBST.
-IntBST *Scheduler::read_dependencies() {
+IntBST *Scheduler::read_dependencies_and_age() {
 	IntBST *dependencies = new IntBST;
 	int pid;
 	
@@ -217,10 +237,18 @@ IntBST *Scheduler::read_dependencies() {
 		//is completed.
 			dependencies->insert(pid); //So we need to insert the pid into the
 									   //tree
+			//we also age the process
+			age(jobs.find_job(pid));
 		}
 	}
 	return dependencies;
 }
+
+void Scheduler::age(Job *process) {
+	runs[runs.size() - 1].push(new_process); //push to the highest queue
+	runs.age
+}
+	
 
 //Call when a job is ready to process through the multilevel feedback queues. Set
 //status to RUNNING, push it to the highest priority queue, then add the resources
@@ -245,9 +273,9 @@ void Scheduler::lookup_from_input() {
 	if (j == NULL) {
 		cout << "COMPLETE" << endl;
 	} else if (j->get_status() == RUNNING) {
-		cout << "RUNNING" << endl;
-		cout << "Resources allocated: " << j->get_resources() << endl;
-		cout << "Successors:" << endl;
+		cout << "RUNNING" << endl
+		     << "Resources allocated: " << j->get_resources() << "/" << memoryUsed
+			 << endl << "Successors:" << endl;
 		j->print_successors();
 	} else {
 		cout << "WAITING" << endl;
@@ -263,10 +291,10 @@ void Scheduler::lookup_from_input() {
 //the MLFQ
 void Scheduler::update_successors() {
 	for (int i = 0; i < current->get_successor_size(); i++) {
-		current->get_successor(i)->get_dependencies()->remove(current->get_pid());
+		current->get_successor(i)->remove_pid_from_dependencies(current->get_pid());
 		
-		if (current->get_successor(i)->get_dependencies()->is_empty()) {
-			start_processing(current->get_successor(i));
+		if (current->get_successor(i)->no_dependencies()) {
+			waitingOnMem.push(current->get_successor(i));
 		}
 	}
 }

@@ -28,13 +28,15 @@ class Job {
 		void print_dependencies();
 		Job *get_successor(int index);
 		int get_successor_size();
-		IntBST *get_dependencies();
+		void remove_pid_from_dependencies(int pid);
+		bool no_dependencies();
 		
 	private:
 		int pid;
 		int execTime;
 		int resources;
 		Status status;
+		bool age;
 		
 		IntBST *dependencies; //a IntBST of PIDs of jobs that need to finished before
 						   //this one can start. The scheduler checks whether this

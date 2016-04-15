@@ -6,7 +6,6 @@
 #include "Job.h"
 #include "IntBST.h"
 #include "JobHashTable.h"
-#include "JobHeap.h"
 
 class Scheduler {
 	public:
@@ -20,7 +19,7 @@ class Scheduler {
 		//constants
 	    static const int BASE_QUANTUM = 1000; //ms
     	static const int DIFF_QUANTUM = 100; //ms
-    	//static const int TOTAL_MEMORY = 1048576; //KB
+    	static const int MAX_MEMORY = 1000; //KB
     	
     	
     	//Storage
@@ -29,12 +28,10 @@ class Scheduler {
     	
     	JobHashTable jobs; //A hashtable of pointers to all Jobs including those
     					   //that are waiting, running, and completed
-    	
-    	JobHeap waiting; //a heap of pointers to jobs that are not yet ready to be
-    					 //processed because they still have dependencies
-    	
-    	//Data that does not change between processor iterations
-    	int memoryUsed;
+    					   
+    	std::queue<Job*> waitingOnMem;
+		int memoryUsed;
+
     	
     	//These are changed for each processor iteration but are stored in private so they
     	//can be accessed everywhere
@@ -45,7 +42,7 @@ class Scheduler {
     	void print_status();
     	bool user_input();
     	void make_job_from_input();
-    	IntBST *read_dependencies();
+    	IntBST *read_dependencies_and_age();
     	void start_processing(Job *new_process);
     	void lookup_from_input();
     	void update_successors();

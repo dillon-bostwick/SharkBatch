@@ -79,7 +79,10 @@ int Job::get_successor_size() {
 	return successors.size();
 }
 
-IntBST *Job::get_dependencies() {
-	return dependencies;
+void Job::remove_pid_from_dependencies(int pid) {
+	dependencies->remove(pid);
 }
 
+bool Job::no_dependencies() {
+	return dependencies->is_empty();
+}

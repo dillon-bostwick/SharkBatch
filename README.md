@@ -10,11 +10,13 @@ A multilevel feedback queue scheduling algorithm that lets you specify number of
 priority levels from the command line, and lets you specify job dependencies as you add
 jobs on-the-fly.
 
-##Install & Run
-Installation:<br>
+##Installation & Running
+Install:<br>
 ```$ make```<br>
 Run program:<br>
 ```$ ./sharkbatch numberOfQueues```<br>
+Uninstall:<br>
+```$ make clean```<br><br>
 Where numberOfQueues is a positive integer less than BASE_QUANTUM/DIFF_QUANTUM, where
 BASE_QUANTUM is the time quantum of the lowest level queue priority, and DIFF_QUANTUM
 is the difference between each adjacent queue priority (you can't go above base/diff
