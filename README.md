@@ -12,7 +12,7 @@ jobs on-the-fly.
 
 ##Install & Run
 Installation:<br>
-```$ make'''<br```
+```$ make```<br>
 Run program:<br>
 ```$ ./sharkbatch numberOfQueues```<br>
 Where numberOfQueues is a positive integer less than BASE_QUANTUM/DIFF_QUANTUM, where
