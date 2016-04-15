@@ -14,7 +14,7 @@ jobs on-the-fly.
 Installation:
 $ make
 Run program:
-$ ./sharkbatch numberOfQueues
+$ ./sharkbatch numberOfQueues<br>
 Where numberOfQueues is a positive integer less than BASE_QUANTUM/DIFF_QUANTUM, where
 BASE_QUANTUM is the time quantum of the lowest level queue priority, and DIFF_QUANTUM
 is the difference between each adjacent queue priority (you can't go above base/diff
