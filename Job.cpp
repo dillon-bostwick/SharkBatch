@@ -12,6 +12,18 @@ Job::Job(int pid, int execTime, int resources, IntBST *dependencies) {
 	this->dependencies = dependencies;
 }
 
+Job::Job(int pid) {
+	this->pid = pid;
+	this->status = NOTAJOB;
+}
+
+void Job::initialize_job(int execTime, int resources, IntBST *dependencies) {
+	this->execTime = execTime;
+	this->resources = resources;
+	this->status = WAITING;
+	this->dependencies = dependencies;
+}
+
 void Job::decrement_time() {
 	execTime--;
 	

@@ -1,5 +1,6 @@
 #include <exception>
 #include <stddef.h>
+#include <iostream>
 #include "JobHashTable.h"
 
 using namespace std;
@@ -23,14 +24,17 @@ void JobHashTable::remove(Node *node) {
 	delete node;
 }
 		
-void JobHashTable::insert(Job *job) {
-	int key = hash(job->get_pid());
+JobHashTable::Node *JobHashTable::insert(int pid) {
+	int key = hash(pid);
 	Node *temp = table[key];
 	
 	table[key] = new Node;
-	table[key]->jobPtr = job;
-	table[key]->pid = job->get_pid();
+	table[key]->jobPtr = new Job(pid); //this line is the only time that an actual
+									   //new job is actually allocated in the heap!
+	table[key]->pid = pid;
 	table[key]->next = temp;
+	
+	return table[key];
 }
 
 //permanently frees the job itself from memory but keeps the node, that way a complete
@@ -43,14 +47,18 @@ void JobHashTable::make_complete(int pid) {
 }
 
 //Returns a pointer to the job specified by a pid. Returns NULL if that job has been
-//completed, and will crash if that pid is nowhere in the table.
-Job *JobHashTable::find_job(int pid) {
+//completed. If that job does not yet exist, it will create a new job and insert
+//it into the hashtable. The job will be initialized with only a pid and set to
+//NOTAJOB when it is created.
+Job *JobHashTable::find_or_insert(int pid) {
+
 	return find(pid, table[hash(pid)])->jobPtr;
 }
 
 JobHashTable::Node *JobHashTable::find(int pid, Node *node) {
-	if (node == NULL) {
-		throw runtime_error("Tried to search for a job that does not exist");
+	if (node == NULL) {	
+		//create a new Job
+		return insert(pid);
 	}
 	
 	if (node->pid == pid) {
@@ -70,7 +78,7 @@ void JobHashTable::add_successors(Job *job, IntBST *dependencies) {
 	//which is O(n^2)
 	
 	for (unsigned i = 0; i < vec.size(); i++) {
-		find_job(vec[i])->add_successor(job);
+		find_or_insert(vec[i])->add_successor(job);
 	}
 	//by the end of this, all the successors should be updated.
 }

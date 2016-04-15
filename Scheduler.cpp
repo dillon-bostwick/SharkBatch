@@ -105,16 +105,14 @@ void Scheduler::process() {
 			throw logic_error("\nDebug: check the process algorithm...?\n");
 		}
 		
-		
-		
 		//now we need to print the status of the entire scheduler architecture before we
-		//iterate. Right now, I'm giving the user an opportunity for input at the end
-		//of every iteration, but hopefully it will eventually be an on-the-fly interruption
+		//iterate. Right now, I'm giving the client an opportunity for input at the end
+		//of every iteration, but later I'll make it an on-the-fly synchronous interruption
 		//of the loop. The user can also only add runs between larger slices of processes.
 		//They can't add a high priority job on-the-fly while a low priority job is in the
 		//middle of a slice and suddenly send the low priority job back to it's queue,
 		//because there is a nested loop above that lets a job finish it's entire slice
-		//or complete itself before running the I/O. 
+		//or complete itself before running any client I/O. 
 		print_status();
 		keepGoing = user_input();
 	}
@@ -200,8 +198,12 @@ void Scheduler::make_job_from_input() {
 	cout << "List dependencies, type -1 when finished:" << endl;
 	dependencies = read_dependencies_and_age();
 	
-	Job *j = new Job(pid, execTime, resources, dependencies);
-	jobs.insert(j); //put the job into the JobHashTable "jobs"
+	//find the job in the hashtable
+	Job *j = jobs.find_or_insert(pid);
+	
+	//Initialize the job - it will receive the status "WAITING" and will have
+	//all the dependencies, execTime, and resources that were taken from cin
+	j->initialize_job(execTime, resources, dependencies);
 	
 	if (dependencies->is_empty()) {
 		//no dependencies -- insert into the waitingOnMem queue to be inserted into
@@ -210,7 +212,7 @@ void Scheduler::make_job_from_input() {
 	} else {
 		//otherwise it needs to enter the waiting heap until it is ready.
 		//We just need to append successors to all the jobs on which this job is
-		//dependent, then it will sit in the hashtable until it is ready
+		//dependent, then it will sit in the hashtable until it is ready.
 		jobs.add_successors(j, dependencies);
 		
 	}
@@ -228,27 +230,20 @@ IntBST *Scheduler::read_dependencies_and_age() {
 		
 		if (pid == -1) {break;} //this is a little hack that works for now
 								//because using eof() and ctl-D was being buggy
-		
-		if (jobs.find_job(pid) != NULL) { //If the dependency the client enters is already
+
+		if (jobs.find_or_insert(pid) != NULL) { //If the dependency the client enters is already
 		//completed, then we just exclude it from the dependency vector. We are left
 		//with only the dependencies that really matter. (In other words, we search
-		//the hashtable using find_job(pid), which returns a pointer to a job if
+		//the hashtable using find_or_insert(pid), which returns a pointer to a job if
 		//that pid is either waiting or processing, but returns NULL of that job
 		//is completed.
 			dependencies->insert(pid); //So we need to insert the pid into the
 									   //tree
-			//we also age the process
-			age(jobs.find_job(pid));
 		}
 	}
 	return dependencies;
 }
 
-void Scheduler::age(Job *process) {
-	runs[runs.size() - 1].push(new_process); //push to the highest queue
-	runs.age
-}
-	
 
 //Call when a job is ready to process through the multilevel feedback queues. Set
 //status to RUNNING, push it to the highest priority queue, then add the resources
@@ -266,7 +261,7 @@ void Scheduler::lookup_from_input() {
 	cout << "To find a job, enter PID: ";
 	cin >> pid;
 	
-	j = jobs.find_job(pid);
+	j = jobs.find_or_insert(pid);
 	
 	cout << "Status: ";
 	

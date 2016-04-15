@@ -12,8 +12,8 @@ class JobHashTable {
 		JobHashTable();
 		~JobHashTable();
 				
-		void insert(Job *job);
-		Job *find_job(int pid);
+
+		Job *find_or_insert(int pid);
 		void make_complete(int pid);
 		void add_successors(Job *job, IntBST *dependencies);
 		
@@ -34,6 +34,7 @@ class JobHashTable {
 		int hash(int pid);
 		void remove(Node *node);
 		Node *find(int pid, Node *node); //NB that this returns a node, not job
+		Node *insert(int pid);
 };
 
 #endif //__JobHashTable_h__

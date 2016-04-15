@@ -7,14 +7,15 @@
 
 class Job;
 typedef std::vector<Job*> JobList; //injecting this everywhere
-enum Status {WAITING, RUNNING, COMPLETE};
+enum Status {NOTAJOB, WAITING, RUNNING, COMPLETE};
 
 class Job {		
 	public:
 
 		
 		Job(int pid, int execTime, int resources, IntBST *dependencies);
-
+		Job(int pid);
+		
 		void decrement_time();
 		bool is_complete();
 		int get_pid();
@@ -30,6 +31,7 @@ class Job {
 		int get_successor_size();
 		void remove_pid_from_dependencies(int pid);
 		bool no_dependencies();
+		void initialize_job(int execTime, int resources, IntBST *dependencies);
 		
 	private:
 		int pid;
