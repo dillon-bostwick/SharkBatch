@@ -46,6 +46,8 @@ class Scheduler {
     	void start_processing(Job *new_process);
     	void lookup_from_input();
     	void update_successors();
+    	void run_job();
+    	void kill_job();
 };
 
 #endif // __scheduler_h__

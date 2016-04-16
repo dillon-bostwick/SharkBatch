@@ -51,11 +51,27 @@ void JobHashTable::make_complete(int pid) {
 //it into the hashtable. The job will be initialized with only a pid and set to
 //NOTAJOB when it is created.
 Job *JobHashTable::find_or_insert(int pid) {
+	return find_or_insert(pid, table[hash(pid)])->jobPtr;
+}
 
+Job *JobHashTable::find(int pid) {
 	return find(pid, table[hash(pid)])->jobPtr;
 }
 
 JobHashTable::Node *JobHashTable::find(int pid, Node *node) {
+	if (node == NULL) {	
+		throw runtime_error("Searched for a job that does not exist!");
+	}
+	
+	if (node->pid == pid) {
+		return node;
+	} else {
+		find(pid, node->next);
+	}
+	throw logic_error("Check JobHashTable::find(int pid, Node *node)....?");
+}
+
+JobHashTable::Node *JobHashTable::find_or_insert(int pid, Node *node) {
 	if (node == NULL) {	
 		//create a new Job
 		return insert(pid);
@@ -83,7 +99,37 @@ void JobHashTable::add_successors(Job *job, IntBST *dependencies) {
 	//by the end of this, all the successors should be updated.
 }
 
-//REWRITE THIS TO A MORE COMPLEX HASH
+//This hash theoretically distributes collisions evenly if the client enters job PIDs
+//in order. If there is any worry of collision clustering, simply rewrite this function
+// -- no changes to the rest of the code are necessary!
 int JobHashTable::hash(int pid) {
 	return pid % SIZE;
 }
+
+void JobHashTable::premature_kill(int pid) {
+	Node *node = table[hash(pid)];
+	Node *temp;
+
+	if (node->pid == pid) {
+		temp = node->next;
+		delete node->jobPtr;
+		delete node;
+		node->next = temp;
+		return;
+	}		
+	
+	node = table[hash(pid)];
+	
+	while (node->next->pid != pid) {
+		node = node->next;
+	}
+	
+	temp = node->next->next;
+	delete node->next->jobPtr;
+	delete node->next;
+	node->next = temp;
+}
+
+
+
+

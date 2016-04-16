@@ -36,7 +36,6 @@ Scheduler::~Scheduler() {
 
 //Iterate through the Multilevel Feedback Queue until the user says to end the program
 void Scheduler::process() {
-	int slice;
 	bool keepGoing = true;
 	
 	make_job_from_input();
@@ -47,6 +46,9 @@ void Scheduler::process() {
 		//because it always takes from the front of the queue; it does not scroll through
 		//with a greedy algorithm looking for all jobs that are less than max. So if one
 		//job uses all of memory there is a huge problem.
+		//
+		//This is sometimes called the "convoy effect" and I am working on figuring
+		//out a cool solution...
 		while (!waitingOnMem.empty() && 
 		 	   waitingOnMem.front()->get_resources() + memoryUsed <= MAX_MEMORY) {
 			start_processing(waitingOnMem.front());
@@ -66,45 +68,11 @@ void Scheduler::process() {
 		}
 	
 		if (priority == -1) {
-			throw runtime_error("Crashing because no processes in MLFQ.");
-		}
-			
-		//"run" current (aka decrement the job's remaining execTime) for a time slice that
-		//is as long as current's priority's time quantum will allow OR until the current
-		//is complete.
-		slice = quants[priority]; //set slice to the quantum
-		while (!current->is_complete() && slice > 0) {
-			current->decrement_time();
-			
-			slice--;	
+			cout << "No processes currently running!" << endl;
+		} else {
+			run_job();
 		}
 
-		//check if the job is completed
-		if (runs[priority].front()->is_complete()) {
-			//remove the job entirely:
-			memoryUsed -= current->get_resources(); //take resources off memory
-			runs[priority].pop(); //pop from the queue
-			update_successors();//remove dependents from all the successors and
-			//run eligible successors
-			jobs.make_complete(current->get_pid()); //this frees the job from memory, but the
-											  //pid stays in the hashtable forever
-		} else if (slice <= 0) {
-			//if the job wasn't completed then it must have used up it's slice and will now
-			//get bumped down a priority UNLESS it is already at priority == 0, in which case
-			//it will just get pushed to the back of the baseline queue for infinite round
-			//robin until completion (remember -- all the long but unimportant processes
-			//end up there
-				runs[priority].pop();
-				
-				if (priority > 0) {
-					priority--;
-				}
-				
-				runs[priority].push(current);
-		} else {
-			throw logic_error("\nDebug: check the process algorithm...?\n");
-		}
-		
 		//now we need to print the status of the entire scheduler architecture before we
 		//iterate. Right now, I'm giving the client an opportunity for input at the end
 		//of every iteration, but later I'll make it an on-the-fly synchronous interruption
@@ -148,7 +116,7 @@ bool  Scheduler::user_input() {
 	char input;
 	
 	while (true) {
-		cout << "INPUT: r = run. a = add job. l = lookup. e = end: ";
+		cout << "INPUT: r = run. a = add job. l = lookup. k = kill. e = end: ";
 		cin >> input;
 	
 		switch (input) {
@@ -159,6 +127,9 @@ bool  Scheduler::user_input() {
 				break;
 			case 'l':
 				lookup_from_input();
+				break;
+			case 'k':
+				kill_job();
 				break;
 			default:
 				cout << "Must input from list of characters above." << endl;
@@ -190,15 +161,14 @@ void Scheduler::make_job_from_input() {
 	cin >> resources; 
 	
 	if (resources > MAX_MEMORY) {
-		cout << "Error: this quantity of resources exceeds MAX_MEMORY. You can not process"
-				" this job." << endl;
-		return;	
+		throw runtime_error("Error: this quantity of resources exceeds MAX MEMORY.");
 	}
 		
 	cout << "List dependencies, type -1 when finished:" << endl;
 	dependencies = read_dependencies_and_age();
 	
-	//find the job in the hashtable
+	//create the job in the hashtable or find it (it may already exist of a job forecast
+	//it as a dependency and is waiting for it)
 	Job *j = jobs.find_or_insert(pid);
 	
 	//Initialize the job - it will receive the status "WAITING" and will have
@@ -231,10 +201,10 @@ IntBST *Scheduler::read_dependencies_and_age() {
 		if (pid == -1) {break;} //this is a little hack that works for now
 								//because using eof() and ctl-D was being buggy
 
-		if (jobs.find_or_insert(pid) != NULL) { //If the dependency the client enters is already
+		if (jobs.find(pid) != NULL) { //If the dependency the client enters is already
 		//completed, then we just exclude it from the dependency vector. We are left
 		//with only the dependencies that really matter. (In other words, we search
-		//the hashtable using find_or_insert(pid), which returns a pointer to a job if
+		//the hashtable using find(pid), which returns a pointer to a job if
 		//that pid is either waiting or processing, but returns NULL of that job
 		//is completed.
 			dependencies->insert(pid); //So we need to insert the pid into the
@@ -261,7 +231,7 @@ void Scheduler::lookup_from_input() {
 	cout << "To find a job, enter PID: ";
 	cin >> pid;
 	
-	j = jobs.find_or_insert(pid);
+	j = jobs.find(pid);
 	
 	cout << "Status: ";
 	
@@ -269,8 +239,9 @@ void Scheduler::lookup_from_input() {
 		cout << "COMPLETE" << endl;
 	} else if (j->get_status() == RUNNING) {
 		cout << "RUNNING" << endl
-		     << "Resources allocated: " << j->get_resources() << "/" << memoryUsed
-			 << endl << "Successors:" << endl;
+		     << "Resources allocated: " << j->get_resources() << " (all processes:"
+		     << memoryUsed << ". Max: " << MAX_MEMORY << ")" << endl 
+		     << "Successors:" << endl;
 		j->print_successors();
 	} else {
 		cout << "WAITING" << endl;
@@ -291,6 +262,61 @@ void Scheduler::update_successors() {
 		if (current->get_successor(i)->no_dependencies()) {
 			waitingOnMem.push(current->get_successor(i));
 		}
+	}
+}
+
+void Scheduler::run_job() {
+	int slice;
+		
+	//"run" current (aka decrement the job's remaining execTime) for a time slice that
+	//is as long as current's priority's time quantum will allow OR until the current
+	//is complete.
+	slice = quants[priority]; //set slice to the quantum
+	while (!current->is_complete() && slice > 0) {
+		current->decrement_time();
+	
+		slice--;	
+	}
+	
+	//check if the job is completed
+	if (runs[priority].front()->is_complete()) {
+		//remove the job entirely:
+		memoryUsed -= current->get_resources(); //take resources off memory
+		runs[priority].pop(); //pop from the queue
+		update_successors();//remove dependents from all the successors and
+		//run eligible successors
+		jobs.make_complete(current->get_pid()); //this frees the job from memory, but the
+	 										  //pid stays in the hashtable forever
+	} else {
+		//if the job wasn't completed then it must have used up it's slice and will now
+		//get bumped down a priority UNLESS it is already at priority == 0, in which case
+		//it will just get pushed to the back of the baseline queue for infinite round
+		//robin until completion (remember -- all the long but unimportant processes
+		//end up there
+			runs[priority].pop();
+			
+			if (priority > 0) {
+				priority--;
+			}
+				
+			runs[priority].push(current);
+	}
+}
+
+void Scheduler::kill_job() {
+	int pid;
+	
+	cout << "To kill a job, enter PID: ";
+	cin >> pid;
+
+	if (jobs.find(pid) == NULL) {
+		cout << "Error: this job already completed." << endl;
+	} else if (jobs.find(pid)->get_successor_size() != 0) {
+		cout << "Some jobs are dependent on the completion of this job to run. "
+				"You can't kill this job.";
+	} else {
+		jobs.premature_kill(pid);
+		cout << "Job #" << pid << " killed prematurely." << endl;
 	}
 }
 

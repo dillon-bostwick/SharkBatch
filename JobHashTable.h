@@ -13,9 +13,12 @@ class JobHashTable {
 		~JobHashTable();
 				
 
-		Job *find_or_insert(int pid);
+		Job *find_or_insert(int pid); //searches for a job, and if the job doesn't exist,
+									  //automatically insert the job
+		Job *find(int pid); //will only search for the job and throws exception if not found
 		void make_complete(int pid);
 		void add_successors(Job *job, IntBST *dependencies);
+		void premature_kill(int pid);
 		
 	private:
 
@@ -34,6 +37,7 @@ class JobHashTable {
 		int hash(int pid);
 		void remove(Node *node);
 		Node *find(int pid, Node *node); //NB that this returns a node, not job
+		Node *find_or_insert(int pid, Node *node);
 		Node *insert(int pid);
 };
 

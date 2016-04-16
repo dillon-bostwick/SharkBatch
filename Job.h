@@ -38,7 +38,6 @@ class Job {
 		int execTime;
 		int resources;
 		Status status;
-		bool age;
 		
 		IntBST *dependencies; //a IntBST of PIDs of jobs that need to finished before
 						   //this one can start. The scheduler checks whether this
