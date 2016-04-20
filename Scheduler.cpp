@@ -35,13 +35,9 @@ Scheduler::~Scheduler() {
 }
 
 //Iterate through the Multilevel Feedback Queue until the user says to end the program
-void Scheduler::process() {
-	bool keepGoing = true;
+void Scheduler::run() {
 	
-	make_job_from_input();
-	
-	while (keepGoing) { 
-	
+	while (user_input()) {
 		//add from waitingOnMem queue until MAX_MEMORY is reached. This can be a problem
 		//because it always takes from the front of the queue; it does not scroll through
 		//with a greedy algorithm looking for all jobs that are less than max. So if one
@@ -49,40 +45,33 @@ void Scheduler::process() {
 		//
 		//This is sometimes called the "convoy effect" and I am working on figuring
 		//out a cool solution...
+		
 		while (!waitingOnMem.empty() && 
 		 	   waitingOnMem.front()->get_resources() + memoryUsed <= MAX_MEMORY) {
 			start_processing(waitingOnMem.front());
 			waitingOnMem.pop();
 		}
-	
-		priority = runs.size();
 
 		//set current to the most important job to run and set "priority" to the priority
 		//of that job
+		
+		priority = runs.size() - 1;
+		
 		while (priority >= 0) {
-			if (!runs[priority].empty()) {
+			if (!runs[priority].empty()) {		
 				current = runs[priority].front();
 				break;
 			}
 			priority--;
 		}
-	
-		if (priority == -1) {
-			cout << "No processes currently running!" << endl;
-		} else {
-			run_job();
-		}
 
-		//now we need to print the status of the entire scheduler architecture before we
-		//iterate. Right now, I'm giving the client an opportunity for input at the end
-		//of every iteration, but later I'll make it an on-the-fly synchronous interruption
-		//of the loop. The user can also only add runs between larger slices of processes.
-		//They can't add a high priority job on-the-fly while a low priority job is in the
-		//middle of a slice and suddenly send the low priority job back to it's queue,
-		//because there is a nested loop above that lets a job finish it's entire slice
-		//or complete itself before running any client I/O. 
-		print_status();
-		keepGoing = user_input();
+		if (priority == -1) {
+			cout << "No processes to run. Nothing happened." << endl;
+		} else {
+			process_job();
+			print_status();
+		}
+		
 	}
 }
 
@@ -100,7 +89,7 @@ void Scheduler::print_status() {
 	}
 	
 	cout << waitingOnMem.size() << endl << "just processed job #" << current->get_pid();
-	
+
 	if (current->get_exec_time() <= 0) {
 		cout << ", which completed in it's allocated CPU time slice." << endl;
 	} else {
@@ -113,6 +102,7 @@ void Scheduler::print_status() {
 
 //User input reader used by processor
 bool  Scheduler::user_input() {
+	
 	char input;
 	
 	while (true) {
@@ -138,6 +128,10 @@ bool  Scheduler::user_input() {
 	}
 }
 
+
+
+
+
 //Add a job from cin. Record execTime, resources, and then call read_dependencies()
 //to generate a pointer to a IntBST that includes every PID of each dependency
 //that the user specifies via cin. Insert the job into the JobHashTable "jobs". Then,
@@ -150,78 +144,117 @@ void Scheduler::make_job_from_input() {
 	int pid;
 	int execTime;
 	int resources;
-	IntBST *dependencies;
+	Job *j;
 	
-	cout << "Add a job." << endl << "PID: ";
-	cin >> pid;
+	cout << "Add a job." << endl;
 	
-	cout << "Execution time: ";
-	cin >> execTime;
-	cout << "Resources (KB): ";
-	cin >> resources; 
-	
-	if (resources > MAX_MEMORY) {
-		throw runtime_error("Error: this quantity of resources exceeds MAX MEMORY.");
-	}
+	//Get the PID from cin
+	do {
+		cout << "PID: ";
+		cin >> pid;
 		
-	cout << "List dependencies, type -1 when finished:" << endl;
-	dependencies = read_dependencies_and_age();
+		j = jobs.find(pid);
+		
+		if (j != NULL && j->get_status() != LATENT) {
+			cout << "PID already exists. Enter a different PID." << endl;
+		} else {
+			if (j == NULL) {
+				//Create a new Job and insert it into the hashtable
+				j = new Job(pid);
+				jobs.insert(j);
+			} //else, it is already exists as LATENT.
+			break;
+		}
+	} while (true);
 	
-	//create the job in the hashtable or find it (it may already exist of a job forecast
-	//it as a dependency and is waiting for it)
-	Job *j = jobs.find_or_insert(pid);
+	//Get the execTime from cin
+	do {
+		cout << "Execution time: ";
+		cin >> execTime;
+		if (execTime <= 0) {
+			cout << "Execution time must be positive. Enter a different time." << endl;
+		} else {
+			break;
+		}
+	} while (true);
 	
-	//Initialize the job - it will receive the status "WAITING" and will have
-	//all the dependencies, execTime, and resources that were taken from cin
-	j->initialize_job(execTime, resources, dependencies);
+	//Get the resources from cin
+	do {
+		cout << "Resources needed: ";
+		cin >> resources;
+		if (resources > MAX_MEMORY) {
+			cout << "cannot use more than MAX MEMORY. Enter a different amount." << endl;
+		} else if (resources < 0) {
+			cout << "Resources cannot be negative. Enter a different amount." << endl;
+		} else {
+			break;
+		}
+	} while (true);
+
+	//We now prepare the job with the given information. This will automatically set the 
+	//job status from LATENT to WAITING
+	j->prepare(execTime, resources);
 	
-	if (dependencies->is_empty()) {
-		//no dependencies -- insert into the waitingOnMem queue to be inserted into
-		//the MLFQ as soon as there is space
+	//Now we read all dependencies from cin and add them
+	read_dependencies(j);
+	
+	//If j has no dependencies, we push it immediately to waitingOnMem, where it waits
+	//to be pushed into the MLFQ
+	if (j->no_dependencies()) {
 		waitingOnMem.push(j);
-	} else {
-		//otherwise it needs to enter the waiting heap until it is ready.
-		//We just need to append successors to all the jobs on which this job is
-		//dependent, then it will sit in the hashtable until it is ready.
-		jobs.add_successors(j, dependencies);
-		
-	}
+	} //else, we don't do anything. j will sit in "jobs" until its dependencies
+	//list is empty, in which case process_job() will take care of pushing to waitingOnMem
 }
 
-//Take a list of PIDs from cin. For each PID, check the JobHashTable "jobs" to see
-//whether it is already complete. If it isn't already complete, add it to a IntBST
-//called dependencies. Return a pointer to this IntBST.
-IntBST *Scheduler::read_dependencies_and_age() {
-	IntBST *dependencies = new IntBST;
+//Take a list of PIDs from cin. For each PID, check the "jobs" JHT to see
+//whether it is already complete. If it isn't already complete, add it to a
+//JHT called dependencies. Also, append the job pointer j to that PID's successor
+//list. When finished, return the dependencies JHT. (NOTE: there are two different
+//uses of the JHT class here)
+void Scheduler::read_dependencies(Job *j) {
 	int pid;
+	Job *dependentJob;
 	
-	while (true) {
+	cout << "Enter dependencies, enter -1 when finished:" << endl;
+	
+	while (std::cin) {
 		cin >> pid;
 		
 		if (pid == -1) {break;} //this is a little hack that works for now
 								//because using eof() and ctl-D was being buggy
+								
+		dependentJob = jobs.find(pid);
 
-		if (jobs.find(pid) != NULL) { //If the dependency the client enters is already
-		//completed, then we just exclude it from the dependency vector. We are left
-		//with only the dependencies that really matter. (In other words, we search
-		//the hashtable using find(pid), which returns a pointer to a job if
-		//that pid is either waiting or processing, but returns NULL of that job
-		//is completed.
-			dependencies->insert(pid); //So we need to insert the pid into the
-									   //tree
+		//If the job specified does not already exist in jobs, we create a new job
+		//that is "latent" -- i.e., we need to keep track of it as a job that could 
+		//potentially get prepared by the client later. For now, it just has a pid and
+		//a list of successors	
+		if (dependentJob == NULL) {
+				dependentJob = new Job(pid);
+				jobs.insert(dependentJob);
+		}
+		
+		//If the dependentJob is already complete, then we don't care and we just ignore
+		//that input
+		if (dependentJob->get_status() != COMPLETE) {
+			//Now we just insert a pointer to the job into the dependencies table
+			j->add_dependency(dependentJob);
+		
+			//And we also need to add our new job to the given job's successor list
+			dependentJob->add_successor(j);
 		}
 	}
-	return dependencies;
 }
 
 
+
 //Call when a job is ready to process through the multilevel feedback queues. Set
-//status to RUNNING, push it to the highest priority queue, then add the resources
-//to memory
+//status from WAITING to RUNNING, push it to the highest priority queue, and add the 
+//resources to memory
 void Scheduler::start_processing(Job *new_process) {
 		new_process->set_status(RUNNING);
 		runs[runs.size() - 1].push(new_process); //add to the highest level priority
-		memoryUsed += new_process->get_resources(); //add resources to memory
+		memoryUsed += new_process->get_resources();
 }
 
 void Scheduler::lookup_from_input() {
@@ -233,65 +266,73 @@ void Scheduler::lookup_from_input() {
 	
 	j = jobs.find(pid);
 	
+	if (j == NULL) {
+		cout << "Error: this PID does not exist anywhere" << endl;
+		return;
+	}
+	
 	cout << "Status: ";
 	
-	if (j == NULL) {
+	if (j->get_status() == COMPLETE) {
 		cout << "COMPLETE" << endl;
 	} else if (j->get_status() == RUNNING) {
 		cout << "RUNNING" << endl
-		     << "Resources allocated: " << j->get_resources() << " (all processes:"
+		     << "Resources allocated: " << j->get_resources() << " (All processes: "
 		     << memoryUsed << ". Max: " << MAX_MEMORY << ")" << endl 
 		     << "Successors:" << endl;
 		j->print_successors();
-	} else {
-		cout << "WAITING" << endl;
-		cout << "Dependents:" << endl;
+	} else if (j->get_status() == WAITING) {
+		cout << "WAITING" << endl << "Dependents:" << endl;
 		j->print_dependencies();
 		cout << "Successors:" << endl;
 		j->print_successors();
-	}	
+	} else {
+		cout << "LATENT" << endl << "Successors:" << endl;
+		j->print_successors(); 
+	}
 }
 
 //Go through current's successors, remove current's PID from all of the successor's
 //dependency trees, then, if dependency tree is empty, insert that successor into
 //the MLFQ
 void Scheduler::update_successors() {
-	for (int i = 0; i < current->get_successor_size(); i++) {
-		current->get_successor(i)->remove_pid_from_dependencies(current->get_pid());
+	JobList *successors = current->get_successors();
+
+	for (unsigned i = 0; i < successors->size(); i++) {
+		successors->at(i)->remove_dependency(current->get_pid());
 		
-		if (current->get_successor(i)->no_dependencies()) {
-			waitingOnMem.push(current->get_successor(i));
+		if (successors->at(i)->no_dependencies()) {
+			waitingOnMem.push(successors->at(i));
 		}
 	}
 }
 
-void Scheduler::run_job() {
+void Scheduler::process_job() {
 	int slice;
-		
+	
 	//"run" current (aka decrement the job's remaining execTime) for a time slice that
 	//is as long as current's priority's time quantum will allow OR until the current
 	//is complete.
 	slice = quants[priority]; //set slice to the quantum
-	while (!current->is_complete() && slice > 0) {
+	while (current->get_status() != COMPLETE && slice > 0) {
 		current->decrement_time();
 	
 		slice--;	
 	}
 	
-	//check if the job is completed
-	if (runs[priority].front()->is_complete()) {
-		//remove the job entirely:
+	if (runs[priority].front()->get_status() == COMPLETE) {
+		//Job was completed:
+		current->set_status(COMPLETE);
 		memoryUsed -= current->get_resources(); //take resources off memory
 		runs[priority].pop(); //pop from the queue
 		update_successors();//remove dependents from all the successors and
 		//run eligible successors
-		jobs.make_complete(current->get_pid()); //this frees the job from memory, but the
-	 										  //pid stays in the hashtable forever
+		
 	} else {
 		//if the job wasn't completed then it must have used up it's slice and will now
 		//get bumped down a priority UNLESS it is already at priority == 0, in which case
 		//it will just get pushed to the back of the baseline queue for infinite round
-		//robin until completion (remember -- all the long but unimportant processes
+		//robin until completion (all the long but unimportant processes
 		//end up there
 			runs[priority].pop();
 			
@@ -305,18 +346,75 @@ void Scheduler::run_job() {
 
 void Scheduler::kill_job() {
 	int pid;
+	Job *j;
+	char cont;
 	
 	cout << "To kill a job, enter PID: ";
 	cin >> pid;
-
-	if (jobs.find(pid) == NULL) {
-		cout << "Error: this job already completed." << endl;
-	} else if (jobs.find(pid)->get_successor_size() != 0) {
-		cout << "Some jobs are dependent on the completion of this job to run. "
-				"You can't kill this job.";
-	} else {
-		jobs.premature_kill(pid);
-		cout << "Job #" << pid << " killed prematurely." << endl;
+	
+	j = jobs.find(pid);
+	
+	if (j == NULL) {
+		cout << "Error: this PID does not exist anywhere" << endl;
+		return;
 	}
+	
+	if (j->get_status() == LATENT) {
+		cout << "Error: this job cannot be killed at this time" << endl;
+	}
+	
+	if (!j->no_successors()) {
+		cout << "Warning: some jobs are dependent on the completion of this job to run. ";
+		cout << "Kill anyway? y/n: ";
+		cin >> cont;
+		if (cont != 'y') {
+			return;
+		}
+	}
+
+
+	if (j->get_status() == COMPLETE) {
+		cout << "Error: this job already completed." << endl;
+		return;
+	} else if (j->get_status() == WAITING) {
+		cout << "Warning: this job has not yet began processing. Remove from schedule "
+		        "anyway? y/n: " << endl;
+		cin >> cont;
+		
+		if (cont == 'y') {
+			convert_to_latent(j);		
+		}
+	} else {
+		jobs.remove(pid); //remove j from the jobs hashtable
+		delete j; //permanently free j from the heap
+		//now find j in the MLFQ and remove it so that the MLFQ won't try to dereference
+		//the dead pointer
+		for (unsigned i = 0; i < runs.size(); i++) {
+			if (runs[i].force_pop(pid)) {
+				break;
+			}
+		}
+	}
+	cout << "Job #" << pid << " killed prematurely." << endl;
 }
+
+//we need to copy the successors, delete j, create a new latent job, then update
+//the new latent job with the successors
+void Scheduler::convert_to_latent(Job *j) {
+	JobList temp;
+	int pid = j->get_pid();
+	
+	temp = *(j->get_successors());
+	jobs.remove(pid);
+	delete j;
+	j = new Job(pid);
+	jobs.insert(j);
+	
+	for (unsigned i = 0; i < temp.size(); i++) {
+		j->add_successor(temp.at(i));
+	}			
+}
+
+
+
 

@@ -4,24 +4,22 @@
 
 using namespace std;
 
-Job::Job(int pid, int execTime, int resources, IntBST *dependencies) {
-	this->pid = pid;
-	this->execTime = execTime;
-	this->resources = resources;
-	this->status = WAITING;
-	this->dependencies = dependencies;
-}
-
+//A "latent" job is a job with a pid and nothing else
 Job::Job(int pid) {
 	this->pid = pid;
-	this->status = NOTAJOB;
+	this->status = LATENT;
 }
 
-void Job::initialize_job(int execTime, int resources, IntBST *dependencies) {
+Job::~Job() {
+	//TODO
+}
+
+void Job::prepare(int execTime, int resources) {
+	if (this->status != LATENT) {throw runtime_error("Only initialize latent jobs");};
+	
 	this->execTime = execTime;
 	this->resources = resources;
 	this->status = WAITING;
-	this->dependencies = dependencies;
 }
 
 void Job::decrement_time() {
@@ -30,10 +28,6 @@ void Job::decrement_time() {
 	if (execTime <= 0) {
 		status = COMPLETE;
 	}
-}
-
-bool Job::is_complete() {
-	return status == COMPLETE;
 }
 
 int Job::get_pid() {
@@ -60,15 +54,6 @@ void Job::add_successor(Job *j) {
 	successors.push_back(j); //always appends to the back of the vector
 }
 
-void Job::remove_dependency(int pid) {
-
-	if (!dependencies->remove(pid)) {
-		throw runtime_error("Job::remove_dependency(int pid): removal of a"
-		"PID from the dependency tree failed, probably because the PID does not"
-		"exist in the tree");
-	} //else the removal succeeded
-}
-
 void Job::print_successors() {
 	if (successors.empty()) {
 		cout << "N/A" << endl;
@@ -80,21 +65,37 @@ void Job::print_successors() {
 }
 
 void Job::print_dependencies() {
-	dependencies->print();
+	if (dependencies.empty()) {
+		cout << "N/A" << endl;
+	}
+	
+	for (unsigned i = 0; i < dependencies.size(); i++) {
+		cout << dependencies[i]->get_pid() << endl;
+	}
 }
 
-Job *Job::get_successor(int index) {
-	return successors[index];
+JobList *Job::get_successors() {
+	return &successors;
 }
 
-int Job::get_successor_size() {
-	return successors.size();
+bool Job::no_successors() {
+	return successors.empty();
 }
 
-void Job::remove_pid_from_dependencies(int pid) {
-	dependencies->remove(pid);
+void Job::remove_dependency(int pid) {
+	for (unsigned i = 0; i < dependencies.size(); i++) {
+		if (dependencies[i]->get_pid() == pid) {
+			//O(1) solution from Stack Overflow
+			swap(dependencies[i], dependencies.back());
+			dependencies.pop_back();
+		}
+	}
+}
+
+void Job::add_dependency(Job* j) {
+	dependencies.push_back(j);
 }
 
 bool Job::no_dependencies() {
-	return dependencies->is_empty();
+	return dependencies.empty();
 }

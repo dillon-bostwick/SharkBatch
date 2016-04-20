@@ -13,18 +13,19 @@ void usageAbort(string program);
 
 int main(int argc, char *argv[]) {
 
+
 	int numQueues = processCommandLine(argc, argv);
 	Scheduler       sharkbatch(numQueues);
 	
 	//a job must be added before any processing...
 	
-	sharkbatch.process();
+	sharkbatch.run();
+
 
 	return 0;
 }
 
-
-///////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 
 int processCommandLine(int argc, char *argv[]) {
 	//check one CL argument exists

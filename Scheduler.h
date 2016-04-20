@@ -1,18 +1,18 @@
 #ifndef __Scheduler_h__
 #define __Scheduler_h__
 
-#include <queue>
 #include <vector>
 #include "Job.h"
 #include "IntBST.h"
 #include "JobHashTable.h"
+#include "JobQueue.h"
 
 class Scheduler {
 	public:
 		Scheduler(int numQueues); //numQueues must be non-negative
 		~Scheduler();
 
-    	void process();
+    	void run();
     	
 	private:
 	
@@ -20,16 +20,16 @@ class Scheduler {
 	    static const int BASE_QUANTUM = 1000; //ms
     	static const int DIFF_QUANTUM = 100; //ms
     	static const int MAX_MEMORY = 1000; //KB
-    	
+
     	
     	//Storage
-    	std::vector<std::queue<Job*> > runs; //A vector of queues of pointers to Jobs
+    	std::vector<JobQueue> runs; //A vector of queues of pointers to Jobs
     	std::vector<int> quants;    //easy access to all the quantums per priority
     	
     	JobHashTable jobs; //A hashtable of pointers to all Jobs including those
     					   //that are waiting, running, and completed
     					   
-    	std::queue<Job*> waitingOnMem;
+    	JobQueue waitingOnMem;
 		int memoryUsed;
 
     	
@@ -42,12 +42,13 @@ class Scheduler {
     	void print_status();
     	bool user_input();
     	void make_job_from_input();
-    	IntBST *read_dependencies_and_age();
+    	void read_dependencies(Job *j);
     	void start_processing(Job *new_process);
     	void lookup_from_input();
     	void update_successors();
-    	void run_job();
+    	void process_job();
     	void kill_job();
+    	void convert_to_latent(Job *j);
 };
 
 #endif // __scheduler_h__
