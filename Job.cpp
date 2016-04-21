@@ -78,6 +78,10 @@ JobList *Job::get_successors() {
 	return &successors;
 }
 
+JobList *Job::get_dependencies() {
+	return &dependencies;
+}
+
 bool Job::no_successors() {
 	return successors.empty();
 }

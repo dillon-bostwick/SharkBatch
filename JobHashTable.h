@@ -9,9 +9,7 @@
  * that the average case of a lookup is worse than O(1) increases.
  *
  * HASHING:
- * It's easy to change the hash function via the hash(pid) definition. It is set to
- * 							Hash(PID) = PID mod capacity
- * at the moment...
+ * It's easy to change the hash function via the hash(pid) definition.
  */
 #ifndef __JobHashTable_h__
 #define __JobHashTable_h__
@@ -45,11 +43,14 @@ class JobHashTable {
 		
 	private:
 		static const int DEFAULT_CAP = 100;
-		int capacity; //size of the table
 		
-		std::vector<Job*> *table; //a pointer to an array of vectors of pointers to jobs
+		int capacity; //N (number of buckets)
+		int size;     //n (number of jobs)
+		
+		std::vector<Job*> *buckets; //a pointer to an array of vectors of pointers to jobs
 				
 		int hash(int pid); //The hash function
+		void expand();
 };
 
 #endif //__JobHashTable_h__

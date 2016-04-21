@@ -5,20 +5,20 @@
 
 using namespace std;
 
-//create the table using DEFAULT_CAP
+//create the buckets using DEFAULT_CAP
 JobHashTable::JobHashTable() {
 	capacity = DEFAULT_CAP;
-	table = new vector<Job*>[capacity];
+	buckets = new vector<Job*>[capacity];
 }
 
-//create the table with a specific expected capacity
+//create the buckets with a specific expected capacity
 JobHashTable::JobHashTable(int capacity) {
 	this->capacity = capacity;
-	table = new vector<Job*>[capacity];
+	buckets = new vector<Job*>[capacity];
 }
 
 JobHashTable::~JobHashTable() {
-	delete [] table;
+	delete [] buckets;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -28,9 +28,9 @@ JobHashTable::~JobHashTable() {
 Job *JobHashTable::find(int pid) {
 	int key = hash(pid);
 	
-	for (unsigned i = 0; i < table[key].size(); i++) {
-		if (table[key][i]->get_pid() == pid) {
-			return table[key][i];
+	for (unsigned i = 0; i < buckets[key].size(); i++) {
+		if (buckets[key][i]->get_pid() == pid) {
+			return buckets[key][i];
 		}
 	}
 	return NULL;
@@ -38,18 +38,24 @@ Job *JobHashTable::find(int pid) {
 
 //insert a job pointer -- always O(1)
 void JobHashTable::insert(Job *j) {
-	table[hash(j->get_pid())].push_back(j);
+	const double LOAD_FACTOR_THRESHOLD = .8;
+	
+	buckets[hash(j->get_pid())].push_back(j);
+	size++;
+	if ((capacity / size) >= LOAD_FACTOR_THRESHOLD) {
+		expand();
+	}
 }
 		
-//Pop a job from the hash table (the job still exists in the heap) -- best O(1)
+//Pop a job from the hash buckets (the job still exists in the heap) -- best O(1)
 bool JobHashTable::remove(int pid) {
 	int key = hash(pid);
 	
-	for (unsigned i = 0; i < table[key].size(); i++) {
-		if (table[key][i]->get_pid() == pid) {
+	for (unsigned i = 0; i < buckets[key].size(); i++) {
+		if (buckets[key][i]->get_pid() == pid) {
 			//An O(1) removal solution when order doesn't matter -- from Stack Overflow
-			swap(table[key][i], table[key].back());
-			table[key].pop_back();
+			swap(buckets[key][i], buckets[key].back());
+			buckets[key].pop_back();
 			return true;
 		}
 	}
@@ -59,8 +65,8 @@ bool JobHashTable::remove(int pid) {
 //Print to cout, does not sort PIDs in order -- always O(n)
 void JobHashTable::print() {
 	for (int i = 0; i < capacity; i++) {
-		for (unsigned j = 0; j < table[i].size(); j++) {
-			cout << table[i][j]->get_pid() << endl;
+		for (unsigned j = 0; j < buckets[i].size(); j++) {
+			cout << buckets[i][j]->get_pid() << endl;
 		}
 	}
 }
@@ -68,7 +74,7 @@ void JobHashTable::print() {
 //Always O(capacity)
 bool JobHashTable::is_empty() {
 	for (int i = 0; i < capacity; i++) {
-		if (!table[i].empty()) {
+		if (!buckets[i].empty()) {
 			return false;
 		}
 	}
@@ -82,3 +88,24 @@ bool JobHashTable::is_empty() {
 int JobHashTable::hash(int pid) {
 	return pid % capacity;
 }
+
+void JobHashTable::expand() {
+	vector<Job*> *newTable = new vector<Job*>[capacity];
+	
+	capacity *= 2;
+	
+	//rehash everything
+	for (int i = 0; i < capacity; i++) {
+		for (unsigned j = 0; j < buckets[j].size(); j++) {
+			newTable[hash(buckets[i][j]->get_pid())].push_back(buckets[i][j]);
+		}
+	}
+	
+	delete [] buckets;
+	buckets = newTable;
+}
+
+
+
+
+

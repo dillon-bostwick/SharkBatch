@@ -6,18 +6,20 @@
 #include <string>
 #include "Scheduler.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <curses.h>
+
 using namespace std;
 
 int processCommandLine(int argc, char *argv[]);
 void usageAbort(string program);
 
+	 
+
 int main(int argc, char *argv[]) {
-
-
 	int numQueues = processCommandLine(argc, argv);
 	Scheduler       sharkbatch(numQueues);
-	
-	//a job must be added before any processing...
 	
 	sharkbatch.run();
 

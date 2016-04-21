@@ -32,6 +32,7 @@ class Job {
 		int      get_exec_time();
 		int      get_resources();		
 		JobList *get_successors();
+		JobList *get_dependencies();
 		Status   get_status();		
 		
 		//set stuff

@@ -2,10 +2,13 @@
 #define __Scheduler_h__
 
 #include <vector>
+#include <fstream>
 #include "Job.h"
 #include "IntBST.h"
 #include "JobHashTable.h"
 #include "JobQueue.h"
+
+#include <curses.h>
 
 class Scheduler {
 	public:
@@ -17,9 +20,11 @@ class Scheduler {
 	private:
 	
 		//constants
-	    static const int BASE_QUANTUM = 1000; //ms
-    	static const int DIFF_QUANTUM = 100; //ms
-    	static const int MAX_MEMORY = 1000; //KB
+	    static const int BASE_QUANTUM = 5000; // * SLEEP_TIME microseconds
+    	static const int DIFF_QUANTUM = 100;  // * SLEEP_TIME microseconds
+    	static const int MAX_MEMORY = 1000;   // KB
+    	
+    	static const int SLEEP_TIME = 1; //microseconds
 
     	
     	//Storage
@@ -32,23 +37,29 @@ class Scheduler {
     	JobQueue waitingOnMem;
 		int memoryUsed;
 
-    	
     	//These are changed for each processor iteration but are stored in private so they
     	//can be accessed everywhere
     	Job *current;
     	int priority; //current priority of current job
+    	bool paused;
+    	bool exit;
+    	//std::istream inFile;
     	
     	//private functions and helpers
-    	void print_status();
-    	bool user_input();
-    	void make_job_from_input();
-    	void read_dependencies(Job *j);
+    	void move_from_waiting();
+    	bool find_next_priority();
+    	void main_menu_input(char input);
+    	void make_job_from_cin();
+    	void read_dependencies(Job *j, bool externalFile, std::istream &inFile);
     	void start_processing(Job *new_process);
     	void lookup_from_input();
     	void update_successors();
     	void process_job();
     	void kill_job();
     	void convert_to_latent(Job *j);
+    	void add_from_file();
+    	void make_job_from_file(std::istream &inFile);
+    	void status_bar();
 };
 
 #endif // __scheduler_h__

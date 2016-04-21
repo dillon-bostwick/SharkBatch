@@ -10,9 +10,8 @@
 // pop here	  		   push here
 
 #include <exception>
-#include <stdexcept>
-#include "JobQueue.h"
 #include <iostream>
+#include "JobQueue.h"
 
 using namespace std;
 

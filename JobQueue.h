@@ -38,7 +38,7 @@ public:
         
         //force remove a job from somewhere within the queue. Worst case O(n) but
         //average case is much better than having to do a dequeue/enqueue
-        //cycle from the client's side!
+        //cycle from the client's side
         bool force_pop(int pid);
         
 
