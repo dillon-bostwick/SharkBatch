@@ -37,7 +37,7 @@ class Job {
 		int      get_response();
 		int      get_turnaround();	
 		int      get_original_exec();
-		int		 get_success_count();
+		int		 get_deep_success();
 		JobList *get_successors();
 		JobList *get_dependencies();
 		Status   get_status();
@@ -51,7 +51,7 @@ class Job {
 		void set_clock_insert(int time);
 		void set_clock_begin(int time);
 		void set_clock_complete(int time);
-		void increment_success_count();
+		void increment_deep_success();
 
 		//determine stuff
 		bool no_dependencies();
@@ -66,7 +66,7 @@ class Job {
 		int pid;
 		int execTime;
 		int resources;
-		int successorCount;
+		int deepSuccessorCount;
 		Status status;
 		
 		//Used for statistics

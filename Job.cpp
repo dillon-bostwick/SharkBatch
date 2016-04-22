@@ -135,12 +135,12 @@ void Job::set_clock_complete(int time) {
 	clockComplete = time;
 }
 
-void Job::increment_success_count() {
-	successorCount++;
+void Job::increment_deep_success() {
+	deepSuccessorCount++;
 }
 
-int Job::get_success_count() {
-	return successorCount;
+int Job::get_deep_success() {
+	return deepSuccessorCount;
 }
 
 

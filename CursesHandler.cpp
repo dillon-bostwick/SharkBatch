@@ -1,68 +1,58 @@
-/* Printing directly the NCurses API makes for some very very very ugly looking code. This
- * is an intermediary API I created in order to shield the Scheduler from some of the
- * ugliness of NCurses. There is a lot of overloading and repeated calls; I just wanted to
- * give Scheduler.cpp all the tools it needs to look as pretty as possible.
- */
-
+#include <string>
+#include <stdlib.h>
+#include <ncurses.h>
+#include "cursesHandler.h"
+#include "Job.h"
 
 using namespace std;
 
-const int CONSOLE_ROW = 7;
-const int CONSOLE_ROW_MAX = 12;
-const int MENU_ROW = 3;
-const int FEED_ROW = 32;
-const int FEED_ROW_MAX = 42;
-const int CORE_ROW = 25;
-const int CORE_ROW_MAX = 28;
-const int STATS_ROW = 46;
-const int PAUSED_ROW = 16;
-
-const int COL_LOCATION = 0; //Mostly just so I can do a word search and change it in the future
-
-
-int currentFeedRow = FEED_ROW;
-int maxHeight;
-int maxWidth;
-
-//XXX on 0 menu 2, 4 console 6, 13 paused 15, 17 status 19, 22 core 24, 29 feed 31, 43 stats 45, 48 49 50
-
-//func decs
-void clear_console();
-void console_bar(string str);
-void wireframe(int line, string str);
-
-
-
 //Calls a bunch of functions that configure NCurses
-void curses_startup(int numQueues) {
+CursesHandler::CursesHandler() {
 	initscr(); //startup ncurses and initialize the stdscr
 	
 	cbreak(); //disable line buffering
 	timeout(1); //set getch to non-blocking, allowing for synchronous loop breaking
 	curs_set(0); //make the cursor invisible (makes everything look better)
-	noecho(); //turn off echo user input by default
-	getmaxyx( stdscr, maxHeight, maxWidth);
+	keypad(stdscr, TRUE);
+	echo(); 
 	
+	do {
+		getmaxyx(stdscr, consoleHeight, consoleWidth);
+		mvprintw(0, 0, "INCREASE TERMINAL SIZE");
+		refresh();
+	} while (consoleHeight < MIN_HEIGHT || consoleWidth < MIN_WIDTH);
+	
+	noecho(); //turn off echo user input by default
+
 	console_bar("Successful initialization");
 	
-	//wireframing
+	currentFeedRow = FEED_ROW;
+
+	refresh(); //refresh stdscr buffer
 	
+}
+
+CursesHandler::~CursesHandler() {
+	printw("\n"); //puts the command line cursor beneath the UI if the program quits
+	curs_set(1); //make cursor visible again
+	endwin(); //return window to normal command line state
+}
+
+
+void CursesHandler::wireframe(int numQueues) {
+	mvprintw(0, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(1, COL_LOCATION, "MENU");
+	mvprintw(2, COL_LOCATION, "----");
 	
+	mvprintw(4, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(5, COL_LOCATION, "CONSOLE");
+	mvprintw(6, COL_LOCATION, "-------");
 	
+	mvprintw(13, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(14, COL_LOCATION, "STATUS OVERVIEW");
+	mvprintw(15, COL_LOCATION, "---------------");
 	
-	wireframe(0, "--------------------------------------------------");
-	wireframe(1, "MENU");
-	wireframe(2, "----");
-	
-	wireframe(4, "--------------------------------------------------");
-	wireframe(5, "CONSOLE");
-	wireframe(6, "-------");
-	
-	wireframe(13, "--------------------------------------------------");
-	wireframe(14, "STATUS OVERVIEW");
-	wireframe(15, "---------------");
-	
-	wireframe(18, "Priority:");
+	mvprintw(18, COL_LOCATION, "Priority:");
 	
 	for (int i = 0; i < numQueues; i++) {
 		mvprintw(18, 15 + i * 4, "%d |", i);
@@ -70,35 +60,33 @@ void curses_startup(int numQueues) {
 	
 	mvprintw(18, 15 + numQueues * 4, "W");
 	
-	wireframe(22, "--------------------------------------------------");
-	wireframe(23, "CURRENT CORE THREAD");
-	wireframe(24, "-------------------");
+	mvprintw(22, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(23, COL_LOCATION, "CURRENT CORE THREAD");
+	mvprintw(24, COL_LOCATION, "-------------------");
 	
-	wireframe(29, "--------------------------------------------------");
-	wireframe(30, "LOG FEED");
-	wireframe(31, "--------");
+	mvprintw(29, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(30, COL_LOCATION, "LOG");
+	mvprintw(31, COL_LOCATION, "---");
 
-	wireframe(43, "--------------------------------------------------");
-	wireframe(44, "STATISTICS");
-	wireframe(45, "----------");	
+	mvprintw(43, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(44, COL_LOCATION, "STATISTICS");
+	mvprintw(45, COL_LOCATION, "----------");	
 	
-	wireframe(52, "--------------------------------------------------");	
-	
-	
-	refresh(); //refresh stdscr buffer
-	
+	mvprintw(52, COL_LOCATION, "------------------------------------------------------------------------------------");		
 }
 
 
-void wireframe(int line, string str) {
-	mvprintw(line, COL_LOCATION, str.c_str());
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+void CursesHandler::CursesHandler::keep_cursor_in_menu(int num) {
+	move(MENU_ROW, 44 + num * 3);
 }
-
-
 
 ///////////////////
 
-void stats_bar(int line, string str, double num) {
+void CursesHandler::CursesHandler::stats_bar(int line, string str, double num) {
 	move(STATS_ROW + line, 0);
 	clrtoeol();
 	
@@ -109,26 +97,26 @@ void stats_bar(int line, string str, double num) {
 
 ///////////////////
 
-void blocking_off() {
+void CursesHandler::CursesHandler::blocking_off() {
 	timeout(1); //turn off input blocking (back to asynchronous)
 	noecho();
 	cbreak();
 }
 
-void blocking_on() {
+void CursesHandler::CursesHandler::blocking_on() {
 	nodelay(stdscr, false); //turn on input blocking
 	echo();
 	nocbreak();
 }
 
-int getIntInput() {
+int CursesHandler::get_int_input() {
 	char input[10];
 	getstr(input);
 	return atoi(input);
 }
 	
 
-void menu_bar(string str) {
+void CursesHandler::CursesHandler::menu_bar(string str) {
 	move(MENU_ROW, 0);
 	clrtoeol();
 	mvprintw(MENU_ROW, COL_LOCATION /2, str.c_str());
@@ -137,44 +125,46 @@ void menu_bar(string str) {
 
 //console bar printer overloads//
 
-void console_bar(int line, string str) {
+void CursesHandler::CursesHandler::console_bar(int line, string str) {
 	move(CONSOLE_ROW + line, 0);
 	clrtoeol();
 	mvprintw(CONSOLE_ROW + line, COL_LOCATION, str.c_str());
 	refresh();
 }
 
-void console_bar(int line, string str, int num) {
+void CursesHandler::console_bar(int line, string str, int num) {
 	move(CONSOLE_ROW + line, 0);
 	clrtoeol();
 	mvprintw(CONSOLE_ROW + line, COL_LOCATION, str.c_str(), num);
 	refresh();
 }
 
-void console_bar(int line, JobList *list) {
+void CursesHandler::console_bar(int line, JobList *list) {
 	move(CONSOLE_ROW + line, 0);
 	clrtoeol();
 	
 	//if list is empty, just print "N/A"
 	if (list->empty()) {
-		wireframe(CONSOLE_ROW + line, "N/A");
+		mvprintw(CONSOLE_ROW + line, COL_LOCATION, "N/A");
 		refresh();
 		return;
 	}
 	
 	//iterate and print until second to last element with commas
+	//NOTE: WHEN PRINTING INTEGERS, THE ROW IS THE LEFTMOST DIGIT, REGARDLESS OF # DIGITS
 	for (unsigned i = 0; i < list->size() - 1; i++) {
-		mvprintw(CONSOLE_ROW + line, i * 2, "%d", list->at(i)->get_pid());
-		mvprintw(CONSOLE_ROW + line, (i * 2) + 1, ",");
+		//TODO: FIX FORMATTING
+		/*mvprintw(CONSOLE_ROW + line, i * 4, "%d", list->at(i)->get_pid());
+		mvprintw(CONSOLE_ROW + line, i * 4 + 3, ",");*/
 	}
 	
 	//print the last element without a comma
-	mvprintw(CONSOLE_ROW + line, list->size() * 3, "%d", list->at(list->size() - 1)->get_pid());
+	mvprintw(CONSOLE_ROW + line, list->size() - 1* 4, "%d", list->at(list->size() - 1)->get_pid());
 	
 	refresh();
 }
 
-void console_bar(string str, char name[]) {
+void CursesHandler::console_bar(string str, char name[]) {
 	move(CONSOLE_ROW, 0);
 	clrtoeol();
 	
@@ -182,18 +172,18 @@ void console_bar(string str, char name[]) {
 	addstr(name);
 }
 
-void console_bar(string str) {
+void CursesHandler::console_bar(string str) {
 	console_bar(0, str);
 }
 
-void console_bar(string str, int num) {
+void CursesHandler::console_bar(string str, int num) {
 	console_bar(0, str, num);
 }
 
 
 ///////////////////////////////////////
 
-void feed_bar(string str, int num) {
+void CursesHandler::feed_bar(string str, int num) {
 	if (currentFeedRow == FEED_ROW_MAX) {
 		currentFeedRow = FEED_ROW;
 		move(FEED_ROW_MAX, 0);
@@ -210,17 +200,42 @@ void feed_bar(string str, int num) {
 	mvprintw(currentFeedRow, COL_LOCATION, "==================================================");
 }
 
+///////////////////////////////////////
+
+void CursesHandler::status_bar( int row, string str) {
+	mvprintw(STATUS_ROW, row, str.c_str());
+	refresh();
+}
+
+void CursesHandler::status_bar(int row, string str, int num) {
+	mvprintw(STATUS_ROW, row, str.c_str(), num);
+	refresh();
+}
+
+void CursesHandler::status_bar(int line, int row, string str, int num) {
+	mvprintw(STATUS_ROW + line, row, str.c_str(), num);
+	refresh();
+}
+
+void CursesHandler::clear_status_bar() {
+	for (int i = STATUS_ROW; i < STATUS_ROW_MAX; i++) {
+		move(i, 0);
+		clrtoeol();
+	}
+	refresh();
+}
+
 
 ///////////////////////////////////////
 
-void core_bar(int line, string str, int num) {
+void CursesHandler::core_bar(int line, string str, int num) {
 	move(CORE_ROW + line, 0);
 	clrtoeol();
 	mvprintw(CORE_ROW + line, COL_LOCATION, str.c_str(), num);
 	refresh();
 }
 
-void clear_core_bar() {
+void CursesHandler::clear_core_bar() {
 	for (int i = CORE_ROW; i < CORE_ROW_MAX; i++) {
 		move(i, 0);
 		clrtoeol();
@@ -232,13 +247,13 @@ void clear_core_bar() {
 	
 ///////////////////////////////////////
 
-void paused_bar(bool paused) {
+void CursesHandler::paused_bar(bool paused) {
 	move(PAUSED_ROW, 0);
 	clrtoeol();
 	if (paused) {
-		wireframe(PAUSED_ROW, "--Paused--");
+		mvprintw(PAUSED_ROW, COL_LOCATION, "--Paused--");
 	} else {
-		wireframe(PAUSED_ROW, "--Running--");
+		mvprintw(PAUSED_ROW, COL_LOCATION, "--Running--");
 	}
 	refresh();
 }
@@ -247,7 +262,7 @@ void paused_bar(bool paused) {
 
 
 
-bool get_y_n() {
+bool CursesHandler::get_y_n() {
 	char yesno;
 	cbreak();
 	yesno = getch();
@@ -256,7 +271,7 @@ bool get_y_n() {
 	return (yesno == 'y');
 }
 
-void clear_console() {
+void CursesHandler::clear_console() {
 	for (int i = CONSOLE_ROW; i < CONSOLE_ROW_MAX; i++) {
 		move(i, 0);
 		clrtoeol();
@@ -264,6 +279,6 @@ void clear_console() {
 	refresh();
 }
 
-void main_menu() {
+void CursesHandler::main_menu() {
 	menu_bar("p = toggle pause. a = add job. f = add jobs from file. l = lookup. k = kill. e = end");
 }

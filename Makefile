@@ -10,7 +10,7 @@ CXX      = clang++
 CXXFLAGS = -Wall -Wextra
 LDFLAGS  = -g -lncurses
 SRCS     = *.cpp
-OBJS     = Scheduler.o main.o Job.o JobHashTable.o JobQueue.o
+OBJS     = Scheduler.o main.o Job.o JobHashTable.o JobQueue.o CursesHandler.o
 
 sharkbatch: ${OBJS}
 	${CXX} ${LDFLAGS} -o sharkbatch ${OBJS}
@@ -23,8 +23,9 @@ provide:
 	provide comp15 LOCATION *
 	
 	
-Scheduler.o: Scheduler.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h CursesHandler.cpp
+Scheduler.o: Scheduler.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h CursesHandler.h
 Job.o: Job.h Job.cpp JobHashTable.h
 JobHashTable.o: JobHashTable.h JobHashTable.cpp Job.h
-main.o: main.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h
+main.o: main.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h CursesHandler.h
 JobQueue.o: JobQueue.h JobQueue.cpp
+CursesHandler.o: CursesHandler.h CursesHandler.cpp

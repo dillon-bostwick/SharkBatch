@@ -7,6 +7,7 @@
 #include "Job.h"
 #include "JobHashTable.h"
 #include "JobQueue.h"
+#include "CursesHandler.h"
 
 class Scheduler {
 	public:
@@ -28,6 +29,7 @@ class Scheduler {
     	//This should be entered as microseconds of wallclock time to sleep system
     	//per jiffie
 
+		CursesHandler win; //The window which handles ALL of the scheduler's I/O
     	
     	//Storage
     	std::vector<JobQueue> runs; //A vector of queues of pointers to Jobs
@@ -73,7 +75,7 @@ class Scheduler {
     	void convert_to_latent(Job *j);
     	void add_from_file();
     	bool make_job_from_line(std::istream &inFile);
-    	void status_bar();
+    	void output_status();
     	void complete_processing();
     	void update_stats();	
 };
