@@ -1,7 +1,3 @@
-###FOR MAX & ERICA:
-
--Can you check my Makefile to just make sure that all the .o are correct? It "works" but 
-I don't want to be missing some compiler errors or something
 
 -----------------------------------------------------------------------------------------
 
