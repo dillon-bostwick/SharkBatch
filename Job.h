@@ -27,34 +27,53 @@ class Job {
 		
 		void prepare(int execTime, int resources); //turns a latent job into a waiting job
 
+
+
 		//get stuff
 		int      get_pid();
 		int      get_exec_time();
 		int      get_resources();		
+		int      get_latency();
+		int      get_response();
+		int      get_turnaround();	
+		int      get_original_exec();
+		int		 get_success_count();
 		JobList *get_successors();
 		JobList *get_dependencies();
-		Status   get_status();		
-		
+		Status   get_status();
+
 		//set stuff
-		void set_status(Status status);
-		void decrement_time();
+		int  decrement_time(int time);
 		void add_dependency(Job *j);
 		void add_successor(Job *j);
 		void remove_dependency(int pid);
+		void set_status(Status status);
+		void set_clock_insert(int time);
+		void set_clock_begin(int time);
+		void set_clock_complete(int time);
+		void increment_success_count();
 
 		//determine stuff
 		bool no_dependencies();
 		bool no_successors();
 
-		//print stuff to cout
+		//print stuff to cout for testing
 		void print_successors();
 		void print_dependencies();
 		
 	private:
+		//Job metadata
 		int pid;
 		int execTime;
 		int resources;
+		int successorCount;
 		Status status;
+		
+		//Used for statistics
+		int originalExecTime;
+		int clockInsert;
+		int clockBegin;
+		int clockComplete;
 		
 		JobList dependencies; //pointers to jobs that need to finished before
 						    //this one can start. The scheduler checks whether this

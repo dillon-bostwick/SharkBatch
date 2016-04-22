@@ -1,6 +1,7 @@
 #include <exception>
 #include <stddef.h>
 #include <iostream>
+#include <vector>
 #include "JobHashTable.h"
 
 using namespace std;
@@ -38,11 +39,12 @@ Job *JobHashTable::find(int pid) {
 
 //insert a job pointer -- always O(1)
 void JobHashTable::insert(Job *j) {
-	const double LOAD_FACTOR_THRESHOLD = .8;
+	double LOAD_FACTOR_THRESHOLD = .8;
 	
 	buckets[hash(j->get_pid())].push_back(j);
 	size++;
-	if ((capacity / size) >= LOAD_FACTOR_THRESHOLD) {
+	
+	if (((double) size / capacity) >= LOAD_FACTOR_THRESHOLD) {
 		expand();
 	}
 }

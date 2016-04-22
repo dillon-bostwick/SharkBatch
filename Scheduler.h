@@ -3,16 +3,14 @@
 
 #include <vector>
 #include <fstream>
+#include <curses.h>
 #include "Job.h"
-#include "IntBST.h"
 #include "JobHashTable.h"
 #include "JobQueue.h"
 
-#include <curses.h>
-
 class Scheduler {
 	public:
-		Scheduler(int numQueues); //numQueues must be non-negative
+		 Scheduler(int numQueues); //numQueues must be non-negative
 		~Scheduler();
 
     	void run();
@@ -24,7 +22,11 @@ class Scheduler {
     	static const int DIFF_QUANTUM = 100;  // * SLEEP_TIME microseconds
     	static const int MAX_MEMORY = 1000;   // KB
     	
-    	static const int SLEEP_TIME = 1; //microseconds
+    	static const unsigned long JIFFIE_TIME = 100;
+    	//Jiffie time is an arbitrary unit of time, which is the minimum unit for which
+    	//the CPU must process work. All execTimes of jobs are represented as jiffie units.
+    	//This should be entered as microseconds of wallclock time to sleep system
+    	//per jiffie
 
     	
     	//Storage
@@ -34,17 +36,29 @@ class Scheduler {
     	JobHashTable jobs; //A hashtable of pointers to all Jobs including those
     					   //that are waiting, running, and completed
     					   
-    	JobQueue waitingOnMem;
-		int memoryUsed;
+    	JobQueue waitingOnMem; //No dependencies left but not enough memory available
+		int memoryUsed; //Total memory used by all current processes
+		
+		
 
     	//These are changed for each processor iteration but are stored in private so they
     	//can be accessed everywhere
-    	Job *current;
-    	int priority; //current priority of current job
+    	Job *current; //current job being processed
+    	int  priority; //current priority of current job
     	bool paused;
     	bool exit;
-    	//std::istream inFile;
     	
+    	
+    	
+    	//Used for computing statistics
+    	int    runClock;
+    	int    totalComplete;
+		int    totalLatency;
+		int    totalTurnaround;
+		int    totalResponse;
+		double totalTurnPerBurst;
+		double totalLatencyPerBurst;
+
     	//private functions and helpers
     	void move_from_waiting();
     	bool find_next_priority();
@@ -58,8 +72,10 @@ class Scheduler {
     	void kill_job();
     	void convert_to_latent(Job *j);
     	void add_from_file();
-    	void make_job_from_file(std::istream &inFile);
+    	bool make_job_from_line(std::istream &inFile);
     	void status_bar();
+    	void complete_processing();
+    	void update_stats();	
 };
 
 #endif // __scheduler_h__

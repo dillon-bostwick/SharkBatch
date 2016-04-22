@@ -16,15 +16,17 @@ using namespace std;
 //Constructing and destructing
 //////////////////////////////////////////////////////////////////////////////////////////
 
-/* Create the MLFQ by initializing runs as a vector of queues, the size of which is
- * specified by the parameter. The quantums are initializing with Q0 starting as BASE
+/* Create the runs by initializing runs as a vector of queues, the size of which is
+ * specified by the parameter. The quanta are initializing with Q0 starting as BASE
  * time, and subsequent priorities have DIFF_QUANTUM less time than the priority beneath
  * them. There cannot be more priorities than BASE_QUANTUM / DIFF_QUANTUM.
  */
+ 
+
 Scheduler::Scheduler(int numQueues) {
 	if (numQueues > BASE_QUANTUM / DIFF_QUANTUM) {
 		throw logic_error("Note: number of priorities must be less than BASE QUANTUM /"
-		"DIFFERENCE BETWEEN QUANTUMS, or else some queues would have non-positive quantums."
+		"DIFFERENCE BETWEEN QUANTA, or else some queues would have non-positive quantas."
 		" Check your command line argument.");
 	}
 	
@@ -38,17 +40,19 @@ Scheduler::Scheduler(int numQueues) {
 	
 	//other data get initialized
 	memoryUsed = 0;
+	runClock = 0;
+	totalComplete = 0;
 	
 	curses_startup(); //initiate a bunch of stuff in order to use NCurses UI environment
 }
 
 Scheduler::~Scheduler() {
-	printw("\n"); //makes the command line cursor not be awkward if the program quits
+	printw("\n"); //puts the command line cursor beneath the UI if the program quits
 	
 	curs_set(1); //make cursor visible again
 	endwin(); //return window to normal command line state
 	
-	//todo --free stuff from memory
+	//todo --free stuff from memory*/
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -57,12 +61,15 @@ Scheduler::~Scheduler() {
 
 //Iterate through the Multilevel Feedback Queue and handle user input from the main menu
 void Scheduler::run() {
+	//curses_startup();
+
 	paused = true;
+	exit = false;
 	char inputChar;
 	
 	//print the initial states of all UI bars to the screen
 	main_menu();
-	paused_bar(paused);
+	paused_bar(true);
 	
 	while (!exit) {
 		//if not paused, run a process iteration
@@ -72,18 +79,23 @@ void Scheduler::run() {
 			if (!find_next_priority()) {
 				clear_console();
 				console_bar("No processes currently running");
+				clear_core_bar();
+				status_bar();
 			} else {
 				process_job();
+				
 			}
 		}
 		
 		//check if the user inputted anything
 		if ((inputChar = getch()) != ERR) {
+			paused_bar(true);
 			blocking_on(); //wait for user input when expected
 			main_menu_input(inputChar); //process the request
 			blocking_off(); //turn off blocking; input will be received asynchronously
 			main_menu(); //print the main menu again
-		}		
+			paused_bar(paused);
+		}
 	}
 }
 
@@ -124,7 +136,6 @@ bool Scheduler::find_next_priority() {
 void Scheduler::move_from_waiting() {
 	while (!waitingOnMem.empty() && 
 		waitingOnMem.front()->get_resources() + memoryUsed <= MAX_MEMORY) {
-		//cout << "Job #" << waitingOnMem.front()->get_pid() << ": Begin processing                                                                                                                                                                 " << endl;	
 		start_processing(waitingOnMem.front());
 		waitingOnMem.pop();
 	}
@@ -134,9 +145,21 @@ void Scheduler::move_from_waiting() {
 //status from WAITING to RUNNING, push it to the highest priority queue, and add the 
 //resources to memory
 void Scheduler::start_processing(Job *new_process) {
-		new_process->set_status(RUNNING);
-		runs[runs.size() - 1].push(new_process); //add to the highest level priority
-		memoryUsed += new_process->get_resources();
+	feed_bar("Job #%d: Began processing", waitingOnMem.front()->get_pid()); //print to feed
+	new_process->set_status(RUNNING);
+	runs[runs.size() - 1].push(new_process); //add to the highest level priority
+	memoryUsed += new_process->get_resources(); //add resources to memory
+	new_process->set_clock_begin(runClock); //record runClock time (for statistics)
+}
+
+void Scheduler::complete_processing() {
+	feed_bar("Job #%d: Completed", current->get_pid()); //print to feed
+	memoryUsed -= current->get_resources(); //take resources off memory
+	runs[priority].pop(); //pop from the queue
+	totalComplete++; //increment the complete counter (used for statistics)
+	current->set_clock_complete(runClock); //record runClock time (for statistics)
+	update_successors();//remove dependents from all the successors and
+	//run eligible successors
 }
 
 void Scheduler::process_job() {
@@ -146,22 +169,17 @@ void Scheduler::process_job() {
 	//is as long as current's priority's time quantum will allow OR until the current
 	//is complete.
 	slice = quants[priority]; //set slice to the quantum
-	while (current->get_status() != COMPLETE && slice > 0) {
-		current->decrement_time();
-		//std::this_thread::sleep_for(std::chrono::microseconds(SLEEP_TIME));
-		status_bar();
-		slice--;	
-	}
 	
+	//"Run" the job
+	runClock += current->decrement_time(slice);
+	std::this_thread::sleep_for(std::chrono::microseconds(JIFFIE_TIME * slice));
+		
+	status_bar();
+
+	//Check if the job completed in the allocated time slice	
 	if (runs[priority].front()->get_status() == COMPLETE) {
-		//Job was completed:
-		//cout << "Job #" << current->get_pid() << ": Completed                                                                                                                                                              " << endl;	
-		current->set_status(COMPLETE);
-		memoryUsed -= current->get_resources(); //take resources off memory
-		runs[priority].pop(); //pop from the queue
-		update_successors();//remove dependents from all the successors and
-		//run eligible successors
-	
+		complete_processing();
+		update_stats();
 	} else {
 		//if the job wasn't completed then it must have used up it's slice and will now
 		//get bumped down a priority UNLESS it is already at priority == 0, in which case
@@ -180,7 +198,7 @@ void Scheduler::process_job() {
 
 //Go through current's successors, remove current's PID from all of the successor's
 //dependency lists, then, if dependency list is empty, insert that successor into
-//the MLFQ
+//the runs
 void Scheduler::update_successors() {
 	JobList *successors = current->get_successors();
 
@@ -200,6 +218,22 @@ void Scheduler::update_successors() {
 
 
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //Functions that handle main menu requests
@@ -254,7 +288,7 @@ void Scheduler::make_job_from_cin() {
 	int resources;
 	Job *j;
 	
-	clear_console();
+	//clear_console();
 
 	//Get the PID from cin
 	do {
@@ -264,20 +298,21 @@ void Scheduler::make_job_from_cin() {
 		j = jobs.find(pid);
 		
 		if (j != NULL && j->get_status() != LATENT) {
-			console_bar("PID already exists. Enter a different PID.");
+			console_bar("PID #%d already exists. Enter a different PID.", pid);
 		} else {
 			if (j == NULL) {
 				//Create a new Job and insert it into the hashtable
 				j = new Job(pid);
 				jobs.insert(j);
-			} //else, it is already exists as LATENT.
+				console_bar("Creating new job PID #%d", pid);
+			} //else, it already exists as LATENT.
 			break;
 		}
 	} while (true);
 	
 	//Get the execTime from cin
 	do {
-		menu_bar("Execution time: ");
+		menu_bar("Expected execution (burst) time: ");
 		execTime = getIntInput();
 		if (execTime <= 0) {
 			console_bar("Execution time must be positive. Enter a different time.");
@@ -291,7 +326,7 @@ void Scheduler::make_job_from_cin() {
 		menu_bar("Resources needed: ");
 		resources = getIntInput();
 		if (resources > MAX_MEMORY) {
-			console_bar("cannot use more than MAX MEMORY. Enter a different amount.");
+			console_bar("Cannot use more than MAX MEMORY. Enter a different amount.");
 		} else if (resources < 0) {
 			console_bar("Resources cannot be negative. Enter a different amount.");
 		} else {
@@ -308,11 +343,13 @@ void Scheduler::make_job_from_cin() {
 	read_dependencies(j, false, cin);
 	
 	//If j has no dependencies, we push it immediately to waitingOnMem, where it waits
-	//to be pushed into the MLFQ
+	//to be pushed into the runs
 	if (j->no_dependencies()) {
 		waitingOnMem.push(j);
 	} //else, we don't do anything. j will sit in "jobs" until its dependencies
 	//list is empty, in which case process_job() will take care of pushing to waitingOnMem
+	
+	j->set_clock_begin(runClock);
 	
 	clear_console();
 	console_bar(0, "Created new job: #%d", pid);
@@ -322,13 +359,13 @@ void Scheduler::make_job_from_cin() {
 	console_bar(4, j->get_dependencies());
 }
 
-void Scheduler::make_job_from_file(std::istream &inFile) {
+bool Scheduler::make_job_from_line(std::istream &inFile) {
 	int pid;
 	int execTime;
 	int resources;
 	Job *j;
 	
-	clear_console();
+	//clear_console();
 
 	inFile >> pid;
 		
@@ -337,7 +374,7 @@ void Scheduler::make_job_from_file(std::istream &inFile) {
 	if (j != NULL && j->get_status() != LATENT) {
 		feed_bar("Error reading file: PID #%d: job already exists", pid);
 		inFile.ignore(256, '\n'); //From StackOF - tells istream to ignore rest of the line
-		return;
+		return false;
 	} else {
 		if (j == NULL) {
 			//Create a new Job and insert it into the hashtable
@@ -350,7 +387,8 @@ void Scheduler::make_job_from_file(std::istream &inFile) {
 	
 	if (execTime <= 0) {
 		feed_bar("Error reading file: PID #%d: execution time must be positive.", pid);
-		return;
+		inFile.ignore(256, '\n');
+		return false;
 	}
 	
 	inFile >> resources;
@@ -358,26 +396,31 @@ void Scheduler::make_job_from_file(std::istream &inFile) {
 	if (resources > MAX_MEMORY) {
 		feed_bar("Error reading file: PID #%d: cannot use more than MAX MEMORY.", pid);
 		inFile.ignore(256, '\n');
-		return;
+		return false;
 	} else if (resources < 0) {
 		feed_bar("Error reading file: PID #%d: resources cannot be negative.", pid);
 		inFile.ignore(256, '\n');
-		return;
-	} else {
-		//We now prepare the job with the given information. This will automatically set the 
-		//job status from LATENT to WAITING
-		j->prepare(execTime, resources);
-	
-		//Now we read all dependencies and add them
-		read_dependencies(j, true, inFile);
-	
-		//If j has no dependencies, we push it immediately to waitingOnMem, where it waits
-		//to be pushed into the MLFQ
-		if (j->no_dependencies()) {
-			waitingOnMem.push(j);
-		} //else, we don't do anything. j will sit in "jobs" until its dependencies
-		//list is empty, in which case process_job() will take care of pushing to waitingOnMem
+		return false;
 	}
+	
+	//We now prepare the job with the given information. This will automatically set the 
+	//job status from LATENT to WAITING
+	j->prepare(execTime, resources);
+	
+	//Now we read all dependencies and add them
+	read_dependencies(j, true, inFile);
+	
+	//If j has no dependencies, we push it immediately to waitingOnMem, where it waits
+	//to be pushed into the runs
+	if (j->no_dependencies()) {
+		waitingOnMem.push(j);
+	} //else, we don't do anything. j will sit in "jobs" until its dependencies
+	//list is empty, in which case process_job() will take care of pushing to waitingOnMem
+	
+	//Record the runClock time at which the job was inserted
+	j->set_clock_insert(runClock);
+	
+	return true;
 }
 
 //Take a list of PIDs from cin. For each PID, check the "jobs" JHT to see
@@ -414,7 +457,6 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFil
 		if (dependentJob->get_status() != COMPLETE) {
 			//Now we just insert a pointer to the job into the dependencies table
 			j->add_dependency(dependentJob);
-		
 			//And we also need to add our new job to the given job's successor list
 			dependentJob->add_successor(j);
 		}
@@ -425,6 +467,7 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFil
 void Scheduler::add_from_file() {
 	ifstream inFile;
 	char fileName[100];
+	bool fail = false;
 
 	while (true) {
 		menu_bar("Enter a file name: ");
@@ -441,13 +484,18 @@ void Scheduler::add_from_file() {
 	}
 	
 	while (!inFile.eof()) {
-		make_job_from_file(inFile);
+		if (!make_job_from_line(inFile)) {
+			fail = true;
+		}	
 	}
 	
 	inFile.close();
 	
-	console_bar("Successfully loaded: ");
-	addstr(fileName);
+	if (fail) {
+		console_bar("Loaded with some errors (see feed): ", fileName);
+	} else {
+		console_bar("Successfully loaded: ", fileName);
+	}
 	
 	refresh();
 }
@@ -468,6 +516,8 @@ void Scheduler::lookup_from_input() {
 	
 	j = jobs.find(pid);
 	
+	clear_console();
+	
 	if (j == NULL) {
 		console_bar("Error: this PID does not exist anywhere");
 		return;
@@ -475,23 +525,28 @@ void Scheduler::lookup_from_input() {
 	
 	console_bar("Job #%d:", pid);
 	
-	if (j->get_status() == COMPLETE) {
-		console_bar(1, "COMPLETE");
-	} else if (j->get_status() == RUNNING) {
-		console_bar(1, "RUNNING");
-		console_bar(2, "Time remaining: %d", j->get_exec_time());
-		console_bar(3, "Resources allocated: %d", j->get_resources());
-		console_bar(4, "Successors: ");
-	} else if (j->get_status() == WAITING) {
-		console_bar(1, "WAITING");
-		console_bar(2, "Dependents:");
-		console_bar(3, j->get_dependencies());
-		console_bar(4, "Successors:");
-		console_bar(5, j->get_successors());
-	} else {
-		console_bar(1, "LATENT");
-		console_bar(2, "Successors:");
-		console_bar(3, j->get_successors());
+	switch (j->get_status()) {
+		case COMPLETE:
+			console_bar(1, "COMPLETE");
+			break;
+		case RUNNING:
+			console_bar(1, "RUNNING");
+			console_bar(2, "Burst time remaining: %d", j->get_exec_time());
+			console_bar(3, "Resources allocated: %d", j->get_resources());
+			console_bar(4, "Successors: ");
+			break;
+		case WAITING:
+			console_bar(1, "WAITING");
+			console_bar(2, "Dependents:");
+			console_bar(3, j->get_dependencies());
+			console_bar(4, "Successors:");
+			console_bar(5, j->get_successors());
+			break;
+		case LATENT:
+			console_bar(1, "LATENT");
+			console_bar(2, "Successors:");
+			console_bar(3, j->get_successors());
+			break;
 	}
 }
 
@@ -543,7 +598,7 @@ void Scheduler::kill_job() {
 	} else {
 		jobs.remove(pid); //remove j from the jobs hashtable
 		delete j; //permanently free j from the heap
-		//now find j in the MLFQ and remove it so that the MLFQ won't try to dereference
+		//now find j in the runs and remove it so that the runs won't try to dereference
 		//the dead pointer
 		for (unsigned i = 0; i < runs.size(); i++) {
 			if (runs[i].force_pop(pid)) {
@@ -571,11 +626,25 @@ void Scheduler::convert_to_latent(Job *j) {
 	}			
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-
-
+void Scheduler::update_stats() {
+	//add current's runClock times into totals
+	totalLatency += current->get_latency();
+	totalTurnaround += current->get_turnaround();
+	totalResponse += current->get_response();
+	totalTurnPerBurst += totalTurnaround / current->get_original_exec();
+	totalLatencyPerBurst += totalLatency / current->get_original_exec();
+	
+	//print all the statistics to 3 decimal places
+	stats_bar(0, "Throughput: %g", (double) totalComplete / runClock);
+	stats_bar(1, "Average latency: %g", (double) totalLatency / totalComplete);
+	stats_bar(2, "Average response time: %g", (double) totalResponse / totalComplete);
+	stats_bar(3, "Average turnaround time: %g", (double) totalTurnaround / totalComplete);
+	stats_bar(4, "Average turnaround per burst time: %g", totalTurnPerBurst / totalComplete);
+	stats_bar(5, "Average latency per burst timet: %g", totalLatencyPerBurst / totalComplete);
+	stats_bar(6, "Total jiffies processed: %g", runClock);
+}
 
 
 
@@ -587,29 +656,31 @@ void Scheduler::convert_to_latent(Job *j) {
 
 void Scheduler::status_bar() {
 
-	int ROW = 5;
+	int STATUS_ROW = 21;
 	int col;
 	
-	move(ROW, 0);
+	move(STATUS_ROW, 0);
 	clrtoeol();
 
-	mvprintw(ROW, 0, "Queue sizes:");
+	mvprintw(STATUS_ROW, 0, "Queue sizes:");
 	
 	for (unsigned i = 0; i < runs.size(); i++) {
-		mvprintw(ROW, (14 + i * 3), "%d", runs[i].size()); //print the queue size
+		mvprintw(STATUS_ROW, (14 + i * 3), "%d", runs[i].size()); //print the queue size
 	}
 	
 	col = 14 + (runs.size() * 3);
 	
-	mvprintw(ROW, col, "%d", waitingOnMem.size()); //print waitingonMem size
+	mvprintw(STATUS_ROW, 14 + (runs.size() * 3), "%d", waitingOnMem.size()); //print waitingonMem size
 	col += 3;
-	mvprintw(ROW, col, "PID: %d ", current->get_pid());
-	col += 9;
-	mvprintw(ROW, col, "--- Priority: %d", priority);
-	col += 16;
-	mvprintw(ROW, col, "--- Jiffies remaining: %*d", current->get_exec_time());
-	col += 28;
-	mvprintw(ROW, col, "--- Total memory occupied: %d", memoryUsed);
+	
+	mvprintw(STATUS_ROW, 17 + (runs.size() * 3), "--- Total memory occupied: %d", memoryUsed);
+	
+	
+	core_bar(0, "PID: %d ", current->get_pid());
+	core_bar(1, "Priority: %d", priority);
+	core_bar(2, "Burst time remaining: %d", current->get_exec_time());
+
+	mvprintw(STATUS_ROW, col, "--- Total memory occupied: %d", memoryUsed);
 	
 	refresh();
 }

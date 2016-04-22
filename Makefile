@@ -23,8 +23,8 @@ provide:
 	provide comp15 LOCATION *
 	
 	
-Scheduler.o:  Scheduler.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h CursesHandler.cpp
+Scheduler.o: Scheduler.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h CursesHandler.cpp
 Job.o: Job.h Job.cpp JobHashTable.h
 JobHashTable.o: JobHashTable.h JobHashTable.cpp Job.h
-main.o: main.cpp Scheduler.h Job.h IntBST.h JobHashTable.h JobQueue.h
+main.o: main.cpp Scheduler.h Job.h JobHashTable.h JobQueue.h
 JobQueue.o: JobQueue.h JobQueue.cpp

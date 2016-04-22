@@ -35,6 +35,19 @@ http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
 Some more theoretical stuff about the MLFQ that is worth a skim:
 http://dl.acm.org/citation.cfm?doid=321707.321717
 
+
+
+-Is pre-emptive
+-My scheduler jobs aren't truly "bursts", although my stats bar refers to them that way,
+ so I call them execTime in the code
+
+###About scheduler statistics:
+
+/////////////TODO
+
+Here's a paper about throughput maximization of different algorithms:
+https://www.cis.upenn.edu/~sudipto/mypapers/throughput.pdf
+
 ##About inputting jobs and job dependencies
 Sharkbatch allows it's client to input new jobs synchronously between slices of processes.
 When adding a job, specify a new PID, expected execution time, memory required, and
@@ -50,3 +63,29 @@ arbitrary iteration. Maybe the reason they don't do this is because it would mak
 it very easy for an application to "game" the scheduler and monopolize the CPU
 by repeatedly sending dependent jobs. But even then, there are still other ways
 to "game" a MLFQ anyway!
+
+
+
+
+
+
+
+
+
+
+
+
+http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf
+http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf
+http://www.cs.tufts.edu/comp/111/
+https://www.cis.upenn.edu/~sudipto/mypapers/throughput.pdf
+https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/5_CPU_Scheduling.html
+http://www.personal.kent.edu/~rmuhamma/OpSystems/Myos/cpuScheduling.htm
+https://en.wikipedia.org/wiki/Scheduling_(computing)
+https://en.wikipedia.org/wiki/Multilevel_feedback_queue
+http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
+http://dl.acm.org/citation.cfm?doid=321707.321717
+
+
+
+

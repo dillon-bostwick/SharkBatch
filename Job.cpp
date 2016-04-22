@@ -18,15 +18,18 @@ void Job::prepare(int execTime, int resources) {
 	if (this->status != LATENT) {throw runtime_error("Only initialize latent jobs");};
 	
 	this->execTime = execTime;
+	this->originalExecTime = execTime;
 	this->resources = resources;
 	this->status = WAITING;
 }
 
-void Job::decrement_time() {
-	execTime--;
-	
-	if (execTime <= 0) {
+int Job::decrement_time(int time) {
+	if (execTime <= time) {
 		status = COMPLETE;
+		return execTime;
+	} else {
+		execTime -= time;
+		return time;
 	}
 }
 
@@ -103,3 +106,41 @@ void Job::add_dependency(Job* j) {
 bool Job::no_dependencies() {
 	return dependencies.empty();
 }
+
+int Job::get_latency() {
+	return clockBegin - clockInsert;
+}
+
+int Job::get_response() {
+	return clockComplete - clockInsert;
+}
+
+int Job::get_original_exec() {
+	return originalExecTime;
+}
+
+int Job::get_turnaround() {
+	return clockComplete - clockBegin;
+}
+
+void Job::set_clock_insert(int time) {
+	clockInsert = time;
+}
+
+void Job::set_clock_begin(int time) {
+	clockBegin = time;
+}
+
+void Job::set_clock_complete(int time) {
+	clockComplete = time;
+}
+
+void Job::increment_success_count() {
+	successorCount++;
+}
+
+int Job::get_success_count() {
+	return successorCount;
+}
+
+
