@@ -43,7 +43,7 @@ Scheduler::Scheduler(int numQueues) {
 	runClock = 0;
 	totalComplete = 0;
 	
-	curses_startup(); //initiate a bunch of stuff in order to use NCurses UI environment
+	curses_startup(numQueues); //initiate a bunch of stuff in order to use NCurses UI environment
 }
 
 Scheduler::~Scheduler() {
@@ -79,7 +79,6 @@ void Scheduler::run() {
 			if (!find_next_priority()) {
 				clear_console();
 				console_bar("No processes currently running");
-				clear_core_bar();
 				status_bar();
 			} else {
 				process_job();
@@ -656,32 +655,26 @@ void Scheduler::update_stats() {
 
 void Scheduler::status_bar() {
 
-	int STATUS_ROW = 21;
-	int col;
+	int STATUS_ROW = 19;
 	
 	move(STATUS_ROW, 0);
 	clrtoeol();
 
-	mvprintw(STATUS_ROW, 0, "Queue sizes:");
+	mvprintw(STATUS_ROW, 0, "Queue size:");
 	
 	for (unsigned i = 0; i < runs.size(); i++) {
-		mvprintw(STATUS_ROW, (14 + i * 3), "%d", runs[i].size()); //print the queue size
+		mvprintw(STATUS_ROW, 15 + i * 4, "%d", runs[i].size()); //print the queue size
+		mvprintw(STATUS_ROW, 17 + i * 4, "|");
 	}
 	
-	col = 14 + (runs.size() * 3);
+	mvprintw(STATUS_ROW, 20 + (runs.size() * 3), "%d", waitingOnMem.size()); //print waitingonMem size
 	
-	mvprintw(STATUS_ROW, 14 + (runs.size() * 3), "%d", waitingOnMem.size()); //print waitingonMem size
-	col += 3;
-	
-	mvprintw(STATUS_ROW, 17 + (runs.size() * 3), "--- Total memory occupied: %d", memoryUsed);
+	mvprintw(STATUS_ROW + 2, 0, "Total memory occupied: %d", memoryUsed);
 	
 	
 	core_bar(0, "PID: %d ", current->get_pid());
 	core_bar(1, "Priority: %d", priority);
 	core_bar(2, "Burst time remaining: %d", current->get_exec_time());
-
-	mvprintw(STATUS_ROW, col, "--- Total memory occupied: %d", memoryUsed);
-	
 	refresh();
 }
 

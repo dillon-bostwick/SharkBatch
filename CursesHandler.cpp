@@ -15,7 +15,7 @@ const int FEED_ROW_MAX = 42;
 const int CORE_ROW = 25;
 const int CORE_ROW_MAX = 28;
 const int STATS_ROW = 46;
-const int PAUSED_ROW = 20;
+const int PAUSED_ROW = 16;
 
 const int COL_LOCATION = 0; //Mostly just so I can do a word search and change it in the future
 
@@ -34,7 +34,7 @@ void wireframe(int line, string str);
 
 
 //Calls a bunch of functions that configure NCurses
-void curses_startup() {
+void curses_startup(int numQueues) {
 	initscr(); //startup ncurses and initialize the stdscr
 	
 	cbreak(); //disable line buffering
@@ -58,13 +58,17 @@ void curses_startup() {
 	wireframe(5, "CONSOLE");
 	wireframe(6, "-------");
 	
-	wireframe(13, "");
-	wireframe(14, "");
-	wireframe(15, "");
+	wireframe(13, "--------------------------------------------------");
+	wireframe(14, "STATUS OVERVIEW");
+	wireframe(15, "---------------");
 	
-	wireframe(17, "--------------------------------------------------");
-	wireframe(18, "STATUS OVERVIEW");
-	wireframe(19, "---------------");
+	wireframe(18, "Priority:");
+	
+	for (int i = 0; i < numQueues; i++) {
+		mvprintw(18, 15 + i * 4, "%d |", i);
+	}
+	
+	mvprintw(18, 15 + numQueues * 4, "W");
 	
 	wireframe(22, "--------------------------------------------------");
 	wireframe(23, "CURRENT CORE THREAD");

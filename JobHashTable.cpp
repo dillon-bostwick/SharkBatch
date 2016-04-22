@@ -10,12 +10,14 @@ using namespace std;
 JobHashTable::JobHashTable() {
 	capacity = DEFAULT_CAP;
 	buckets = new vector<Job*>[capacity];
+	size = 0;
 }
 
 //create the buckets with a specific expected capacity
 JobHashTable::JobHashTable(int capacity) {
 	this->capacity = capacity;
 	buckets = new vector<Job*>[capacity];
+	size = 0;
 }
 
 JobHashTable::~JobHashTable() {
