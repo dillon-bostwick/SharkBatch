@@ -37,11 +37,11 @@ http://dl.acm.org/citation.cfm?doid=321707.321717
 -My scheduler jobs aren't truly "bursts", although my stats bar refers to them that way,
  so I call them execTime in the code
 
-###About scheduler statistics:
+##About scheduler statistics:
 
 /////////////TODO
 
-Here's a paper about throughput maximization of different algorithms:
+For more information on throughput,
 https://www.cis.upenn.edu/~sudipto/mypapers/throughput.pdf
 
 ##About inputting jobs and job dependencies
@@ -70,6 +70,7 @@ to "game" a MLFQ anyway!
 
 
 
+###More about job processing
 
 http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf
 http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf
@@ -79,9 +80,8 @@ https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/5_CPU_Scheduling.html
 http://www.personal.kent.edu/~rmuhamma/OpSystems/Myos/cpuScheduling.htm
 https://en.wikipedia.org/wiki/Scheduling_(computing)
 https://en.wikipedia.org/wiki/Multilevel_feedback_queue
+https://en.wikipedia.org/wiki/Fixed-priority_pre-emptive_scheduling
+
 http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
 http://dl.acm.org/citation.cfm?doid=321707.321717
-
-
-
 
