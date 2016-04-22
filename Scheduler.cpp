@@ -645,7 +645,7 @@ void Scheduler::update_stats() {
 	stats_bar(6, "Total jiffies processed: %g", runClock);
 }
 
-
+   
 
 
 
