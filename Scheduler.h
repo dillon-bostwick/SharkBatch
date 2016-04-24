@@ -77,7 +77,7 @@ class Scheduler {
     	void convert_to_latent(Job *j);
     	void add_from_file();
     	bool make_job_from_line(std::istream &inFile);
-    	void output_status();
+    	void output_status(int slice);
     	void complete_processing();
     	void update_stats();	
     	void deep_search_update(Job *j, int num);

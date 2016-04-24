@@ -257,10 +257,24 @@ void CursesHandler::paused_bar(bool paused) {
 	move(PAUSED_ROW, 0);
 	clrtoeol();
 	if (paused) {
-		mvprintw(PAUSED_ROW, COL_LOCATION, "--Paused--");
+		mvprintw(PAUSED_ROW, COL_LOCATION, "~~Paused~~");
 	} else {
-		mvprintw(PAUSED_ROW, COL_LOCATION, "--Running--");
+		mvprintw(PAUSED_ROW, COL_LOCATION, "~~Running~~");
 	}
+	refresh();
+}
+
+void CursesHandler::mode_bar(bool varyQuanta, bool chainWeighting) {
+	move(MODE_ROW, 0);
+	clrtoeol();
+	
+	if (varyQuanta) {
+		mvprintw(MODE_ROW, COL_LOCATION, "~~Quanta Mode~~");
+	}
+	if (chainWeighting) {
+		mvprintw(MODE_ROW, COL_LOCATION + 17, "~~Weighting Mode~~");
+	}
+	
 	refresh();
 }
 

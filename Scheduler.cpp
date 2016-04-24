@@ -23,16 +23,21 @@ using namespace std;
  */
  
 Scheduler::Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chainWeighting) {
+	if (numQueues > baseQuantum) {
+		throw runtime_error("baseQuantum time must be larger than numQueues");
+	}
+	
 	//create the runs vector
 	runs.resize(numQueues);
 	
 	this->BASE_QUANTUM = baseQuantum;
 	this->VARY_QUANTA = varyQuanta;
-	this->CHAIN_WEIGHTING = chainWeighting;	
+	this->CHAIN_WEIGHTING = chainWeighting;
 
 	//The win object is already implicitly initialized with a Scheduler. We still need
 	//to call wireframe, which creates the UI skeleton
 	win.wireframe(numQueues);
+	win.mode_bar(varyQuanta, chainWeighting);
 	
 	//other Scheduler data get initialized
 	memoryUsed = 0;
@@ -160,7 +165,7 @@ void Scheduler::process_job() {
 	int slice = BASE_QUANTUM;
 	
 	if (VARY_QUANTA) {
-		slice /= priority + 1;
+		slice -= (BASE_QUANTUM / runs.size()) * priority;
 	}
 	
 	if (CHAIN_WEIGHTING) {
@@ -173,7 +178,7 @@ void Scheduler::process_job() {
 	runClock += current->decrease_time(slice);
 	std::this_thread::sleep_for(std::chrono::microseconds(JIFFIE_TIME * slice));
 		
-	output_status(); //update the status bar
+	output_status(slice); //update the status bar
 
 	//Check if the job completed in the allocated time slice	
 	if (runs[priority].front()->get_status() == COMPLETE) {
@@ -701,7 +706,7 @@ void Scheduler::update_stats() {
 
 ///////////////////Curses Handler stuff//////////////////////
 
-void Scheduler::output_status() {
+void Scheduler::output_status(int slice) {
 	//for status_bar, the leading integer parameter is a row, not a column, unless two
 	//leading integers are specified, in which case it is row, column, str...
 	//This is the only CursesHandler function like this!
@@ -722,5 +727,6 @@ void Scheduler::output_status() {
 	win.core_bar(0, "PID: %d ", current->get_pid());
 	win.core_bar(1, "Priority: %d", priority);
 	win.core_bar(2, "Burst time remaining: %d", current->get_exec_time());
+	win.core_bar(3, "Time slice allocated: %d", slice);
 }
 

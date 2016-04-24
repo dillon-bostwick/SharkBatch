@@ -45,6 +45,8 @@
 		void status_bar(int line, int row, std::string str, int num);
 		void clear_status_bar();
 		
+		void mode_bar(bool varyQuanta, bool chainWeighting);
+		
 		void paused_bar(bool paused);
 
 		void core_bar(int line, std::string str, int num);
@@ -65,7 +67,8 @@
 		static const int CORE_ROW = 25;
 		static const int CORE_ROW_MAX = 28;
 		static const int STATS_ROW = 46;
-		static const int PAUSED_ROW = 16;
+		static const int MODE_ROW = 16;
+		static const int PAUSED_ROW = 17;
 		static const int STATUS_ROW = 19;
 		static const int STATUS_ROW_MAX = 21;
 
