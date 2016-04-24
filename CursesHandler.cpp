@@ -1,4 +1,5 @@
 #include <string>
+#include <iostream>
 #include <stdlib.h>
 #include <ncurses.h>
 #include "cursesHandler.h"
@@ -152,15 +153,18 @@ void CursesHandler::console_bar(int line, JobList *list) {
 	
 	//iterate and print until second to last element with commas
 	//NOTE: WHEN PRINTING INTEGERS, THE ROW IS THE LEFTMOST DIGIT, REGARDLESS OF # DIGITS
-	for (unsigned i = 0; i < list->size() - 1; i++) {
-		//TODO: FIX FORMATTING
-		/*mvprintw(CONSOLE_ROW + line, i * 4, "%d", list->at(i)->get_pid());
-		mvprintw(CONSOLE_ROW + line, i * 4 + 3, ",");*/
+	for (unsigned i = 0; i < list->size(); i++) {
+		printw("%d", list->at(i)->get_pid());
+		
+		//stop printing after 5 elements
+		if (i == 10) {
+			printw("......(%d more jobs)", list->size() - 10);
+			break;
+		} else if (i != list->size() - 1) {
+			printw(", ");
+		}
 	}
-	
-	//print the last element without a comma
-	mvprintw(CONSOLE_ROW + line, list->size() - 1* 4, "%d", list->at(list->size() - 1)->get_pid());
-	
+
 	refresh();
 }
 
@@ -197,7 +201,9 @@ void CursesHandler::feed_bar(string str, int num) {
 	
 	currentFeedRow++;
 	
-	mvprintw(currentFeedRow, COL_LOCATION, "==================================================");
+	mvprintw(currentFeedRow, COL_LOCATION, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+	
+	refresh();
 }
 
 ///////////////////////////////////////

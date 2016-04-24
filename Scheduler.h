@@ -11,17 +11,20 @@
 
 class Scheduler {
 	public:
-		 Scheduler(int numQueues); //numQueues must be non-negative
+		 Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chainWeighting);
 		~Scheduler();
 
     	void run();
-    	
+
 	private:
 	
 		//constants
-	    static const int BASE_QUANTUM = 5000; // * SLEEP_TIME microseconds
-    	static const int DIFF_QUANTUM = 100;  // * SLEEP_TIME microseconds
+	    int BASE_QUANTUM;
+	    bool VARY_QUANTA;
+		bool CHAIN_WEIGHTING;
+
     	static const int MAX_MEMORY = 1000;   // KB
+    	
     	
     	static const unsigned long JIFFIE_TIME = 100;
     	//Jiffie time is an arbitrary unit of time, which is the minimum unit for which
@@ -33,8 +36,7 @@ class Scheduler {
     	
     	//Storage
     	std::vector<JobQueue> runs; //A vector of queues of pointers to Jobs
-    	std::vector<int> quants;    //easy access to all the quantums per priority
-    	
+
     	JobHashTable jobs; //A hashtable of pointers to all Jobs including those
     					   //that are waiting, running, and completed
     					   
@@ -78,6 +80,7 @@ class Scheduler {
     	void output_status();
     	void complete_processing();
     	void update_stats();	
+    	void deep_search_update(Job *j, int num);
 };
 
 #endif // __scheduler_h__

@@ -8,6 +8,8 @@ using namespace std;
 Job::Job(int pid) {
 	this->pid = pid;
 	this->status = LATENT;
+	
+	longestSuccesschain = 0;
 }
 
 Job::~Job() {
@@ -23,7 +25,7 @@ void Job::prepare(int execTime, int resources) {
 	this->status = WAITING;
 }
 
-int Job::decrement_time(int time) {
+int Job::decrease_time(int time) {
 	if (execTime <= time) {
 		status = COMPLETE;
 		return execTime;
@@ -135,12 +137,12 @@ void Job::set_clock_complete(int time) {
 	clockComplete = time;
 }
 
-void Job::increment_deep_success() {
-	deepSuccessorCount++;
+void Job::set_longest_chain(int num) {
+	longestSuccesschain = num;
 }
 
-int Job::get_deep_success() {
-	return deepSuccessorCount;
+int Job::get_longest_chain() {
+	return longestSuccesschain;
 }
 
 

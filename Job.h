@@ -41,9 +41,10 @@ class Job {
 		JobList *get_successors();
 		JobList *get_dependencies();
 		Status   get_status();
+		int 	get_longest_chain();
 
 		//set stuff
-		int  decrement_time(int time);
+		int  decrease_time(int time);
 		void add_dependency(Job *j);
 		void add_successor(Job *j);
 		void remove_dependency(int pid);
@@ -51,7 +52,7 @@ class Job {
 		void set_clock_insert(int time);
 		void set_clock_begin(int time);
 		void set_clock_complete(int time);
-		void increment_deep_success();
+		void set_longest_chain(int num);
 
 		//determine stuff
 		bool no_dependencies();
@@ -66,7 +67,7 @@ class Job {
 		int pid;
 		int execTime;
 		int resources;
-		int deepSuccessorCount;
+		int longestSuccesschain;
 		Status status;
 		
 		//Used for statistics

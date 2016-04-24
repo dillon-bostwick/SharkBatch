@@ -22,28 +22,26 @@ using namespace std;
  * them. There cannot be more priorities than BASE_QUANTUM / DIFF_QUANTUM.
  */
  
-
-Scheduler::Scheduler(int numQueues) {
-	if (numQueues > BASE_QUANTUM / DIFF_QUANTUM) {
-		throw logic_error("Note: number of priorities must be less than BASE QUANTUM /"
-		"DIFFERENCE BETWEEN QUANTA, or else some queues would have non-positive quantas."
-		" Check your command line argument.");
-	}
-	
+Scheduler::Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chainWeighting) {
 	//create the runs vector
 	runs.resize(numQueues);
 	
-	//create the quants vector
-	for (int i = 0; i < numQueues && i < BASE_QUANTUM / DIFF_QUANTUM; i++) {
-		quants.push_back(BASE_QUANTUM - (i * DIFF_QUANTUM));
-	}
+	this->BASE_QUANTUM = baseQuantum;
+	this->VARY_QUANTA = varyQuanta;
+	this->CHAIN_WEIGHTING = chainWeighting;	
 
-	win.wireframe(numQueues); //wireframe the UI
+	//The win object is already implicitly initialized with a Scheduler. We still need
+	//to call wireframe, which creates the UI skeleton
+	win.wireframe(numQueues);
 	
-	//other data get initialized
+	//other Scheduler data get initialized
 	memoryUsed = 0;
 	runClock = 0;
 	totalComplete = 0;
+	
+	win.console_bar("Initialization successful");
+	win.console_bar(1, "Base quantum: %d", baseQuantum);
+	win.console_bar(2, "Number of queues: %d", numQueues);
 }
 
 Scheduler::~Scheduler() {
@@ -159,18 +157,23 @@ void Scheduler::complete_processing() {
 }
 
 void Scheduler::process_job() {
-	int slice;
+	int slice = BASE_QUANTUM;
 	
+	if (VARY_QUANTA) {
+		slice /= priority + 1;
+	}
+	
+	if (CHAIN_WEIGHTING) {
+		slice *= current->get_longest_chain() + 1;
+	}
+		
 	//"run" current (aka decrement the job's remaining execTime) for a time slice that
 	//is as long as current's priority's time quantum will allow OR until the current
 	//is complete.
-	slice = quants[priority]; //set slice to the quantum
-	
-	//"Run" the job
-	runClock += current->decrement_time(slice);
+	runClock += current->decrease_time(slice);
 	std::this_thread::sleep_for(std::chrono::microseconds(JIFFIE_TIME * slice));
 		
-	output_status();
+	output_status(); //update the status bar
 
 	//Check if the job completed in the allocated time slice	
 	if (runs[priority].front()->get_status() == COMPLETE) {
@@ -207,19 +210,35 @@ void Scheduler::update_successors() {
 	}
 }
 
-
-
-//Traverse all dependencies using a depth first search, and increment the deep successor
-//count of all jobs.
-/*
-void Scheduler::deep_search_increment(
-	//if dependents equals empty - base case
+//Longest chain algorithm. A job's longest chain is the net jobs that must be completed
+//to finish the longest possible chain of successors. This method starts with a new
+//job j that was added, and recalculates the times of all jobs that are in j's chain of
+//dependencies -- note j is NOT the job for which we want to recalculate the longest chain
+//variable. Note also that we are computing # of jobs, not net burst time; see ReadMe
+//for why this makes more sense
+//
+//No help from online resources; it really is not very complex.
+//I loosely based my mindset on Dijkstra. Not sure if this is the optimal complexity
+//or not but I'd rather use recursion than determine whether another solution is more
+//optimized without relying on the runtime stack.
+void Scheduler::deep_search_update(Job *j, int num) {
+	//Recurse through all of j's dependents with an incremented num (base case if no
+	//dependents exist)
+	for (unsigned i = 0; i < j->get_dependencies()->size(); i++) {
+		deep_search_update(j->get_dependencies()->at(i), num + 1);
+	}
 	
-	//increment success count
-
-	//return deep_search_append for all dependents
+	//If the passed num is greater than j's current longest chain, then set the
+	//new longest. (NB: Job's constructor always initiates longest chain to 0)
+	if (num > j->get_longest_chain()) {
+		j->set_longest_chain(num);
+	}
 }
-*/
+
+
+
+
+
 
 
 
@@ -373,12 +392,12 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 	//win.clear_console();
 
 	inFile >> pid;
-		
+	
 	j = jobs.find(pid);
 		
 	if (j != NULL && j->get_status() != LATENT) {
 		win.feed_bar("Error reading file: PID #%d: job already exists", pid);
-		inFile.ignore(256, '\n'); //From StackOF - tells istream to ignore rest of the line
+		inFile.ignore(256, '\n'); //From StackOF - tells istream to ignore rest of line
 		return false;
 	} else {
 		if (j == NULL) {
@@ -412,7 +431,7 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 	//job status from LATENT to WAITING
 	j->prepare(execTime, resources);
 	
-	//Now we read all dependencies and add them
+	//Now we read all dependencies and add them straight into the job's dep. vector
 	read_dependencies(j, true, inFile);
 	
 	//If j has no dependencies, we push it immediately to waitingOnMem, where it waits
@@ -425,6 +444,8 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 	//Record the runClock time at which the job was inserted
 	j->set_clock_insert(runClock);
 	
+	win.feed_bar("Created new job PID #%d", pid);
+		
 	return true;
 }
 
@@ -464,10 +485,17 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFil
 		//If the dependentJob is already complete, then we don't care and we just ignore
 		//that input
 		if (dependentJob->get_status() != COMPLETE) {
-			//Now we just insert a pointer to the job into the dependencies table
+			//Otherwise we insert a pointer to the job into the dependencies table
 			j->add_dependency(dependentJob);
 			//And we also need to add our new job to the given job's successor list
 			dependentJob->add_successor(j);
+			
+			//Now we run the deep search function on the new dependent job (see
+			//comments for the deep_search_increment function definition for details).
+			//Note that we pass the second parameter as j's current longest chain, which
+			//might not necessarily be 0 if it was initialized out of a latent state,
+			//plus 1 because we are adding another chain level either way
+			deep_search_update(dependentJob, j->get_longest_chain() + 1);
 		}
 		
 		count++;
@@ -479,6 +507,8 @@ void Scheduler::add_from_file() {
 	ifstream inFile;
 	char fileName[100];
 	bool fail = false;
+	
+	win.clear_console();
 
 	while (true) {
 		win.menu_bar("Enter a file name: ");
@@ -493,6 +523,9 @@ void Scheduler::add_from_file() {
 			break;
 		}
 	}
+	
+	win.console_bar("Loading a large file may take a while if Chain Weighting Mode is"
+					" enabled....");
 	
 	while (!inFile.eof()) {
 		if (!make_job_from_line(inFile)) {
@@ -545,6 +578,8 @@ void Scheduler::lookup_from_input() {
 			win.console_bar(2, "Burst time remaining: %d", j->get_exec_time());
 			win.console_bar(3, "Resources allocated: %d", j->get_resources());
 			win.console_bar(4, "Successors: ");
+			win.console_bar(5, j->get_successors());
+			win.console_bar(6, "Longest chain: %d", j->get_longest_chain());
 			break;
 		case WAITING:
 			win.console_bar(1, "WAITING");
@@ -552,11 +587,13 @@ void Scheduler::lookup_from_input() {
 			win.console_bar(3, j->get_dependencies());
 			win.console_bar(4, "Successors:");
 			win.console_bar(5, j->get_successors());
+			win.console_bar(6, "Longest chain: %d", j->get_longest_chain());
 			break;
 		case LATENT:
 			win.console_bar(1, "LATENT");
 			win.console_bar(2, "Successors:");
 			win.console_bar(3, j->get_successors());
+			win.console_bar(4, "Longest chain: %d", j->get_longest_chain());
 			break;
 	}
 }
@@ -678,7 +715,7 @@ void Scheduler::output_status() {
 		win.status_bar(17 + i * 4, "|");
 	}
 	
-	win.status_bar(20 + (runs.size() * 3), "%d", waitingOnMem.size()); //print waitingonMem size
+	win.status_bar(15 + (runs.size() * 4), "%d", waitingOnMem.size()); //print waitingonMem size
 	
 	win.status_bar(2, 0, "Total memory occupied: %d", memoryUsed);
 	

@@ -51,20 +51,10 @@ dependencies. If a job is dependent on some jobs that haven't been finished, sha
 will hold that job before pushing it to the MLFQ. You can even enter a dependent
 PID that the scheduler has never seen before.
 
-I am currently working on a way for SharkBatch to determine if some low priority
-job is vital to some important dependency chain of other jobs, and will detect
-this starvation automatically and age the job to high priorities. So far, I am not
-aware of any OS that does this -- some of them age all jobs depending on some
-arbitrary iteration. Maybe the reason they don't do this is because it would make
-it very easy for an application to "game" the scheduler and monopolize the CPU
-by repeatedly sending dependent jobs. But even then, there are still other ways
-to "game" a MLFQ anyway!
-
-
-
-
-
-
+##About chain weighting
+Number of jobs not net burst time, because we care about completions and maximizing
+throughput. I could of done net burst time if I cared about not starving that last job
+but that wouldn't make as much sense as maximizing the completion of all jobs in the chain
 
 
 

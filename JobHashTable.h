@@ -4,13 +4,17 @@
  * Uses the chaining method. An array of vectors of pointers to jobs.
  *
  * SPECIFYING SIZE WHEN INITIALIZING:
- * When initializing, the client has the chance to set the capacity of the table.
- * As the number of elements in the hash table approaches capacity, the probability
- * that the average case of a lookup is worse than O(1) increases.
+ * When initializing, the client can choose set manually set the capacity of the table.
+ * (As the number of elements in the hash table approaches capacity, the probability
+ * that the average case of a lookup is worse than O(1) increases).
  *
  * HASHING:
  * It's easy to change the hash function via the hash(pid) definition.
+ *
+ * EXPANDING:
+ * When the load factor hits .8, the table always doubles its capacity.
  */
+ 
 #ifndef __JobHashTable_h__
 #define __JobHashTable_h__
 

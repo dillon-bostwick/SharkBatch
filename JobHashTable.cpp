@@ -45,7 +45,7 @@ void JobHashTable::insert(Job *j) {
 	
 	buckets[hash(j->get_pid())].push_back(j);
 	size++;
-	
+
 	if (((double) size / capacity) >= LOAD_FACTOR_THRESHOLD) {
 		expand();
 	}
@@ -69,8 +69,9 @@ bool JobHashTable::remove(int pid) {
 //Print to cout, does not sort PIDs in order -- always O(n)
 void JobHashTable::print() {
 	for (int i = 0; i < capacity; i++) {
+		cerr << "Bucket #" << i << ": ";
 		for (unsigned j = 0; j < buckets[i].size(); j++) {
-			cout << buckets[i][j]->get_pid() << endl;
+			cerr << buckets[i][j]->get_pid() << ",";
 		}
 	}
 }
@@ -94,13 +95,15 @@ int JobHashTable::hash(int pid) {
 }
 
 void JobHashTable::expand() {
-	vector<Job*> *newTable = new vector<Job*>[capacity];
+	vector<Job*> *newTable;
 	
 	capacity *= 2;
 	
+	newTable = new vector<Job*>[capacity];
+	
 	//rehash everything
-	for (int i = 0; i < capacity; i++) {
-		for (unsigned j = 0; j < buckets[j].size(); j++) {
+	for (int i = 0; i < capacity / 2; i++) {
+		for (unsigned j = 0; j < buckets[i].size(); j++) {
 			newTable[hash(buckets[i][j]->get_pid())].push_back(buckets[i][j]);
 		}
 	}

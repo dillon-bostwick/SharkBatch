@@ -58,7 +58,7 @@
  	private:
 		//Parameters for wireframing the UI
  		static const int CONSOLE_ROW = 7;
-		static const int CONSOLE_ROW_MAX = 12;
+		static const int CONSOLE_ROW_MAX = 13;
 		static const int MENU_ROW = 3;
 		static const int FEED_ROW = 32;
 		static const int FEED_ROW_MAX = 42;
