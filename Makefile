@@ -18,7 +18,7 @@ sharkbatch: ${OBJS}
 clean:
 	rm -rf sharkbatch *.o *~ *.dSYM core.*
 
-# MUST SPECIFY A LOCATION WHEN PROVIDING!!!
+# Must specify a location first when providing!
 provide:
 	provide comp15 LOCATION *
 	

@@ -1,3 +1,9 @@
+/*
+ * CursesHandler.cpp
+ * by Dillon Bostwick
+ * see CursesHandler.h for details
+ */
+
 #include <string>
 #include <iostream>
 #include <stdlib.h>
@@ -19,7 +25,7 @@ CursesHandler::CursesHandler() {
 	
 	do {
 		getmaxyx(stdscr, consoleHeight, consoleWidth);
-		mvprintw(0, 0, "INCREASE TERMINAL SIZE");
+		mvprintw(0, 0, "INCREASE TERMINAL SIZE (must be at least %d x %d)", MIN_WIDTH, MIN_HEIGHT);
 		refresh();
 	} while (consoleHeight < MIN_HEIGHT || consoleWidth < MIN_WIDTH);
 	
@@ -34,9 +40,10 @@ CursesHandler::CursesHandler() {
 }
 
 CursesHandler::~CursesHandler() {
-	printw("\n"); //puts the command line cursor beneath the UI if the program quits
+	printw("\n"); //puts the command line cursor beneath the UI
 	curs_set(1); //make cursor visible again
-	endwin(); //return window to normal command line state
+	endwin(); //terminates NCureses mode
+	cerr << "Sucessfully exited\n";
 }
 
 
@@ -49,17 +56,17 @@ void CursesHandler::wireframe(int numQueues) {
 	mvprintw(5, COL_LOCATION, "CONSOLE");
 	mvprintw(6, COL_LOCATION, "-------");
 	
-	mvprintw(13, COL_LOCATION, "------------------------------------------------------------------------------------");
-	mvprintw(14, COL_LOCATION, "STATUS OVERVIEW");
-	mvprintw(15, COL_LOCATION, "---------------");
+	mvprintw(14, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(15, COL_LOCATION, "STATUS OVERVIEW");
+	mvprintw(16, COL_LOCATION, "---------------");
 	
-	mvprintw(18, COL_LOCATION, "Priority:");
+	mvprintw(19, COL_LOCATION, "Priority:");
 	
 	for (int i = 0; i < numQueues; i++) {
-		mvprintw(18, 15 + i * 4, "%d |", i);
+		mvprintw(19, 15 + i * 4, "%d |", i);
 	}
 	
-	mvprintw(18, 15 + numQueues * 4, "W");
+	mvprintw(19, 15 + numQueues * 4, "W");
 	
 	mvprintw(22, COL_LOCATION, "------------------------------------------------------------------------------------");
 	mvprintw(23, COL_LOCATION, "CURRENT CORE THREAD");
@@ -69,11 +76,11 @@ void CursesHandler::wireframe(int numQueues) {
 	mvprintw(30, COL_LOCATION, "LOG");
 	mvprintw(31, COL_LOCATION, "---");
 
-	mvprintw(43, COL_LOCATION, "------------------------------------------------------------------------------------");
-	mvprintw(44, COL_LOCATION, "STATISTICS");
-	mvprintw(45, COL_LOCATION, "----------");	
-	
-	mvprintw(52, COL_LOCATION, "------------------------------------------------------------------------------------");		
+	mvprintw(44, COL_LOCATION, "------------------------------------------------------------------------------------");
+	mvprintw(45, COL_LOCATION, "STATISTICS");
+	mvprintw(46, COL_LOCATION, "----------");	
+
+	mvprintw(53, COL_LOCATION, "------------------------------------------------------------------------------------");		
 }
 
 
@@ -140,7 +147,7 @@ void CursesHandler::console_bar(int line, string str, int num) {
 	refresh();
 }
 
-void CursesHandler::console_bar(int line, JobList *list) {
+void CursesHandler::console_bar(int line, const Job::JobList *list) {
 	move(CONSOLE_ROW + line, 0);
 	clrtoeol();
 	

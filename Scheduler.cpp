@@ -1,3 +1,9 @@
+/*
+ * Scheduler.cpp
+ * by Dillon Bostwick
+ * see Scheduler.h for details
+ */
+
 #include <iostream>
 #include <fstream>
 #include <exception>
@@ -24,7 +30,7 @@ using namespace std;
  
 Scheduler::Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chainWeighting) {
 	if (numQueues > baseQuantum) {
-		throw runtime_error("baseQuantum time must be larger than numQueues");
+		throw logic_error("baseQuantum time must be larger than numQueues");
 	}
 	
 	//create the runs vector
@@ -65,9 +71,7 @@ void Scheduler::run() {
 	paused = true;
 	exit = false;
 	char inputChar;
-	
-
-	
+		
 	//print the initial states of all UI bars to the screen
 	win.main_menu();
 	win.paused_bar(true);
@@ -96,6 +100,7 @@ void Scheduler::run() {
 			win.paused_bar(paused);
 		}
 	}
+	win.~CursesHandler(); //Returns the terminal to normal command line view
 }
 
 
@@ -141,21 +146,21 @@ void Scheduler::move_from_waiting() {
 }
 
 //Call when a job is ready to process through the multilevel feedback queues. Set
-//status from WAITING to RUNNING, push it to the highest priority queue, and add the 
+//status from Job::WAITING to RUNNING, push it to the highest priority queue, and add the 
 //resources to memory
 void Scheduler::start_processing(Job *new_process) {
 	win.feed_bar("Job #%d: Began processing", waitingOnMem.front()->get_pid()); //print to feed
-	new_process->set_status(RUNNING);
+	new_process->set_status(Job::RUNNING);
 	runs[runs.size() - 1].push(new_process); //add to the highest level priority
 	memoryUsed += new_process->get_resources(); //add resources to memory
 	new_process->set_clock_begin(runClock); //record runClock time (for statistics)
 }
 
 void Scheduler::complete_processing() {
-	win.feed_bar("Job #%d: Completed", current->get_pid()); //print to feed
+	win.feed_bar("Job #%d: Job::COMPLETEd", current->get_pid()); //print to feed
 	memoryUsed -= current->get_resources(); //take resources off memory
 	runs[priority].pop(); //pop from the queue
-	totalComplete++; //increment the complete counter (used for statistics)
+	totalComplete++; //increment the Job::COMPLETE counter (used for statistics)
 	current->set_clock_complete(runClock); //record runClock time (for statistics)
 	update_successors();//remove dependents from all the successors and
 	//run eligible successors
@@ -174,18 +179,18 @@ void Scheduler::process_job() {
 		
 	//"run" current (aka decrement the job's remaining execTime) for a time slice that
 	//is as long as current's priority's time quantum will allow OR until the current
-	//is complete.
+	//is Job::COMPLETE.
 	runClock += current->decrease_time(slice);
 	std::this_thread::sleep_for(std::chrono::microseconds(JIFFIE_TIME * slice));
 		
 	output_status(slice); //update the status bar
 
-	//Check if the job completed in the allocated time slice	
-	if (runs[priority].front()->get_status() == COMPLETE) {
+	//Check if the job Job::COMPLETEd in the allocated time slice	
+	if (runs[priority].front()->get_status() == Job::COMPLETE) {
 		complete_processing();
 		update_stats();
 	} else {
-		//if the job wasn't completed then it must have used up it's slice and will now
+		//if the job wasn't Job::COMPLETEd then it must have used up it's slice and will now
 		//get bumped down a priority UNLESS it is already at priority == 0, in which case
 		//it will just get pushed to the back of the baseline queue for infinite round
 		//robin until completion (all the long but unimportant processes
@@ -204,7 +209,7 @@ void Scheduler::process_job() {
 //dependency lists, then, if dependency list is empty, insert that successor into
 //the runs
 void Scheduler::update_successors() {
-	JobList *successors = current->get_successors();
+	Job::JobList *successors = current->get_successors();
 
 	for (unsigned i = 0; i < successors->size(); i++) {
 		successors->at(i)->remove_dependency(current->get_pid());
@@ -215,7 +220,7 @@ void Scheduler::update_successors() {
 	}
 }
 
-//Longest chain algorithm. A job's longest chain is the net jobs that must be completed
+//Longest chain algorithm. A job's longest chain is the net jobs that must be Job::COMPLETEd
 //to finish the longest possible chain of successors. This method starts with a new
 //job j that was added, and recalculates the times of all jobs that are in j's chain of
 //dependencies -- note j is NOT the job for which we want to recalculate the longest chain
@@ -292,6 +297,7 @@ void Scheduler::main_menu_input(char input) {
 			add_from_file();
 			break;
 		default:
+			win.clear_console();
 			win.console_bar("Must input from list of characters above.");
 			break;
 	}
@@ -306,10 +312,10 @@ void Scheduler::main_menu_input(char input) {
 //Add a job from cin. Record execTime, resources, and then call read_dependencies()
 //to generate a pointer to a IntBST that includes every PID of each dependency
 //that the user specifies via cin. Insert the job into the JobHashTable "jobs". Then,
-//check if there are any dependencies. If the dependency tree is already completely
+//check if there are any dependencies. If the dependency tree is already Job::COMPLETEly
 //empty, then start processing the job immediately (i.e. it inters into the highest
 //priority of the Multilevel Feedback Queue), otherwise, it enters the JobHeap
-//"waiting" until the IntBST dependencies is completely empty, in which case it is
+//"Job::WAITING" until the IntBST dependencies is Job::COMPLETEly empty, in which case it is
 //popped from the JobHeap.
 void Scheduler::make_job_from_cin() {
 	int pid;
@@ -326,7 +332,7 @@ void Scheduler::make_job_from_cin() {
 
 		j = jobs.find(pid);
 		
-		if (j != NULL && j->get_status() != LATENT) {
+		if (j != NULL && j->get_status() != Job::LATENT) {
 			win.console_bar("PID #%d already exists. Enter a different PID.", pid);
 		} else {
 			if (j == NULL) {
@@ -334,7 +340,7 @@ void Scheduler::make_job_from_cin() {
 				j = new Job(pid);
 				jobs.insert(j);
 				win.console_bar("Creating new job PID #%d", pid);
-			} //else, it already exists as LATENT.
+			} //else, it already exists as Job::LATENT.
 			break;
 		}
 	} while (true);
@@ -364,7 +370,7 @@ void Scheduler::make_job_from_cin() {
 	} while (true);
 
 	//We now prepare the job with the given information. This will automatically set the 
-	//job status from LATENT to WAITING
+	//job status from Job::LATENT to Job::WAITING
 	j->prepare(execTime, resources);
 	
 	//Now we read all dependencies and add them
@@ -388,7 +394,7 @@ void Scheduler::make_job_from_cin() {
 	win.console_bar(4, j->get_dependencies());
 }
 
-bool Scheduler::make_job_from_line(std::istream &inFile) {
+bool Scheduler::make_job_from_line(istream &inFile) {
 	int pid;
 	int execTime;
 	int resources;
@@ -400,7 +406,7 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 	
 	j = jobs.find(pid);
 		
-	if (j != NULL && j->get_status() != LATENT) {
+	if (j != NULL && j->get_status() != Job::LATENT) {
 		win.feed_bar("Error reading file: PID #%d: job already exists", pid);
 		inFile.ignore(256, '\n'); //From StackOF - tells istream to ignore rest of line
 		return false;
@@ -409,7 +415,7 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 			//Create a new Job and insert it into the hashtable
 			j = new Job(pid);
 			jobs.insert(j);
-		} //else, it is already exists as LATENT.
+		} //else, it is already exists as Job::LATENT.
 	}
 	
 	inFile >> execTime;
@@ -433,7 +439,7 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 	}
 	
 	//We now prepare the job with the given information. This will automatically set the 
-	//job status from LATENT to WAITING
+	//job status from Job::LATENT to Job::WAITING
 	j->prepare(execTime, resources);
 	
 	//Now we read all dependencies and add them straight into the job's dep. vector
@@ -455,11 +461,11 @@ bool Scheduler::make_job_from_line(std::istream &inFile) {
 }
 
 //Take a list of PIDs from cin. For each PID, check the "jobs" JHT to see
-//whether it is already complete. If it isn't already complete, add it to a
+//whether it is already Job::COMPLETE. If it isn't already Job::COMPLETE, add it to a
 //JHT called dependencies. Also, append the job pointer j to that PID's successor
 //list. When finished, return the dependencies JHT. (NOTE: there are two different
 //uses of the JHT class here)
-void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFile) {
+void Scheduler::read_dependencies(Job *j, bool externalFile, const istream &inFile) {
 	int pid;
 	int count = 1;
 	Job *dependentJob;
@@ -472,14 +478,12 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFil
 			win.keep_cursor_in_menu(count);
 		}
 		
-		if (pid == -1) {break;} //sentinel method works for now but not ideal
-		
-		
+		if (pid == -1) {break;} //Just using a simple sentinel method for this...
 		
 		dependentJob = jobs.find(pid);
 
 		//If the job specified does not already exist in jobs, we create a new job
-		//that is "latent" -- i.e., we need to keep track of it as a job that could 
+		//that is "Job::LATENT" -- i.e., we need to keep track of it as a job that could 
 		//potentially get prepared by the client later. For now, it just has a pid and
 		//a list of successors	
 		if (dependentJob == NULL) {
@@ -487,9 +491,9 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFil
 				jobs.insert(dependentJob);
 		}
 		
-		//If the dependentJob is already complete, then we don't care and we just ignore
+		//If the dependentJob is already Job::COMPLETE, then we don't care and we just ignore
 		//that input
-		if (dependentJob->get_status() != COMPLETE) {
+		if (dependentJob->get_status() != Job::COMPLETE) {
 			//Otherwise we insert a pointer to the job into the dependencies table
 			j->add_dependency(dependentJob);
 			//And we also need to add our new job to the given job's successor list
@@ -498,9 +502,11 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, std::istream &inFil
 			//Now we run the deep search function on the new dependent job (see
 			//comments for the deep_search_increment function definition for details).
 			//Note that we pass the second parameter as j's current longest chain, which
-			//might not necessarily be 0 if it was initialized out of a latent state,
+			//might not necessarily be 0 if it was initialized out of a Job::LATENT state,
 			//plus 1 because we are adding another chain level either way
-			deep_search_update(dependentJob, j->get_longest_chain() + 1);
+			if (CHAIN_WEIGHTING) {
+				deep_search_update(dependentJob, j->get_longest_chain() + 1);
+			}
 		}
 		
 		count++;
@@ -575,27 +581,27 @@ void Scheduler::lookup_from_input() {
 	win.console_bar("Job #%d:", pid);
 	
 	switch (j->get_status()) {
-		case COMPLETE:
-			win.console_bar(1, "COMPLETE");
+		case Job::COMPLETE:
+			win.console_bar(1, "Job::COMPLETE");
 			break;
-		case RUNNING:
+		case Job::RUNNING:
 			win.console_bar(1, "RUNNING");
 			win.console_bar(2, "Burst time remaining: %d", j->get_exec_time());
 			win.console_bar(3, "Resources allocated: %d", j->get_resources());
 			win.console_bar(4, "Successors: ");
 			win.console_bar(5, j->get_successors());
-			win.console_bar(6, "Longest chain: %d", j->get_longest_chain());
+				win.console_bar(6, "Longest chain: %d", j->get_longest_chain());
 			break;
-		case WAITING:
-			win.console_bar(1, "WAITING");
+		case Job::WAITING:
+			win.console_bar(1, "Job::WAITING");
 			win.console_bar(2, "Dependents:");
 			win.console_bar(3, j->get_dependencies());
 			win.console_bar(4, "Successors:");
 			win.console_bar(5, j->get_successors());
 			win.console_bar(6, "Longest chain: %d", j->get_longest_chain());
 			break;
-		case LATENT:
-			win.console_bar(1, "LATENT");
+		case Job::LATENT:
+			win.console_bar(1, "Job::LATENT");
 			win.console_bar(2, "Successors:");
 			win.console_bar(3, j->get_successors());
 			win.console_bar(4, "Longest chain: %d", j->get_longest_chain());
@@ -623,12 +629,12 @@ void Scheduler::kill_job() {
 		return;
 	}
 	
-	if (j->get_status() == LATENT) {
+	if (j->get_status() == Job::LATENT) {
 		win.console_bar("Error: this job cannot be killed at this time");
 	}
 
-	if (j->get_status() == COMPLETE) {
-		win.console_bar("Error: this job already completed.");
+	if (j->get_status() == Job::COMPLETE) {
+		win.console_bar("Error: this job already Job::COMPLETEd.");
 		return;
 	} else if (!j->no_successors()) {
 		win.console_bar("Warning: some jobs are dependent on the completion of this job to run. ");
@@ -639,7 +645,7 @@ void Scheduler::kill_job() {
 		} else {
 			return;
 		}
-	}else if (j->get_status() == WAITING) {
+	}else if (j->get_status() == Job::WAITING) {
 		win.console_bar("Warning: this job has not yet began processing.");
 		win.menu_bar("Remove from schedule anyway? y/n: ");
 		
@@ -662,10 +668,10 @@ void Scheduler::kill_job() {
 	win.console_bar("Job #%d killed prematurely.", pid);
 }
 
-//we need to copy the successors, delete j, create a new latent job, then update
-//the new latent job with the successors
+//we need to copy the successors, delete j, create a new Job::LATENT job, then update
+//the new Job::LATENT job with the successors
 void Scheduler::convert_to_latent(Job *j) {
-	JobList temp;
+	Job::JobList temp;
 	int pid = j->get_pid();
 	
 	temp = *(j->get_successors());
@@ -720,9 +726,9 @@ void Scheduler::output_status(int slice) {
 		win.status_bar(17 + i * 4, "|");
 	}
 	
-	win.status_bar(15 + (runs.size() * 4), "%d", waitingOnMem.size()); //print waitingonMem size
+	win.status_bar(15 + (runs.size() * 4), "%d", waitingOnMem.size()); //print waitingOnMem size
 	
-	win.status_bar(2, 0, "Total memory occupied: %d", memoryUsed);
+	win.status_bar(1, 0, "Total memory occupied: %d", memoryUsed);
 	
 	win.core_bar(0, "PID: %d ", current->get_pid());
 	win.core_bar(1, "Priority: %d", priority);

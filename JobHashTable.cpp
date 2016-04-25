@@ -1,3 +1,9 @@
+/*
+ * JobHashTable.cpp
+ * by Dillon Bostwick
+ * see JobHashTable.h for details
+ */
+
 #include <exception>
 #include <stddef.h>
 #include <iostream>
@@ -13,7 +19,7 @@ JobHashTable::JobHashTable() {
 	size = 0;
 }
 
-//create the buckets with a specific expected capacity
+//create the buckets with a specific beginning capacity
 JobHashTable::JobHashTable(int capacity) {
 	this->capacity = capacity;
 	buckets = new vector<Job*>[capacity];
@@ -24,7 +30,7 @@ JobHashTable::~JobHashTable() {
 	delete [] buckets;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 
 
 //Return a pointer to a job; if the job doesn't exist, returns NULL -- best O(1)
@@ -41,7 +47,7 @@ Job *JobHashTable::find(int pid) {
 
 //insert a job pointer -- always O(1)
 void JobHashTable::insert(Job *j) {
-	double LOAD_FACTOR_THRESHOLD = .8;
+	//double LOAD_FACTOR_THRESHOLD = .8;
 	
 	buckets[hash(j->get_pid())].push_back(j);
 	size++;
@@ -66,7 +72,7 @@ bool JobHashTable::remove(int pid) {
 	return false;
 }
 
-//Print to cout, does not sort PIDs in order -- always O(n)
+//Print to cerr for testing; does not sort PIDs in order
 void JobHashTable::print() {
 	for (int i = 0; i < capacity; i++) {
 		cerr << "Bucket #" << i << ": ";
@@ -76,7 +82,7 @@ void JobHashTable::print() {
 	}
 }
 
-//Always O(capacity)
+//Worst O(N), best O(1), average O(N/2)
 bool JobHashTable::is_empty() {
 	for (int i = 0; i < capacity; i++) {
 		if (!buckets[i].empty()) {
@@ -86,14 +92,23 @@ bool JobHashTable::is_empty() {
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////
 
-
-///////////////////////////////////////////////////////////////////////////////////////
-
+/*
+ * It's easy to change the hash function via the hash(pid) definition. Right now, it is
+ * just pid modulo capacity because I assume the user will enter a random range of PIDs, 
+ * but the class is designed to allow a more advanced compression if needed. hash(pid)
+ * handles wrapping on its own, so if the function is changed, it should always end in
+ * modulo capacity.
+ */
 int JobHashTable::hash(int pid) {
 	return pid % capacity;
 }
 
+
+//Does not expand in place -- copies to a new vector. Always doubles the capacity when
+//expanding. Always O(n)
+//
 void JobHashTable::expand() {
 	vector<Job*> *newTable;
 	

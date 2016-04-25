@@ -1,18 +1,33 @@
-/* JobHashTable: A hash table of pointers to jobs. Jobs are hashed by their PID.
+/* JobHashTable
+ * by Dillon Bostwick
+ *
+ * A hash table of pointers to jobs. Jobs are hashed by their PID.
  *
  * COLLISION HANDLING:
- * Uses the chaining method. An array of vectors of pointers to jobs.
+ * Uses the chaining method. I.e. an array of vectors of pointers to jobs.
  *
  * SPECIFYING SIZE WHEN INITIALIZING:
- * When initializing, the client can choose set manually set the capacity of the table.
+ * When initializing, the client can choose to manually set the capacity of the table.
  * (As the number of elements in the hash table approaches capacity, the probability
  * that the average case of a lookup is worse than O(1) increases).
  *
  * HASHING:
- * It's easy to change the hash function via the hash(pid) definition.
+ * It's easy to change the hash function via the hash(pid) definition. Right now, it is
+ * just pid modulo capacity because I assume the user will enter a random range of PIDs, 
+ * but the class is designed to allow a more advanced compression if needed. hash(pid)
+ * handles wrapping on its own, so if the function is changed, it should always end in
+ * modulo capacity.
  *
  * EXPANDING:
- * When the load factor hits .8, the table always doubles its capacity.
+ * When the load factor hits .8, the table always doubles in capacity.
+ *
+ *
+ * Scheduler needs to know the PIDs of all completed processses. Currently, when a job is 
+ * completed, the job is stored by the program and is not freed from memory until
+ * SharkBatch is terminated. For convenience, SharkBatch is implemented such that if
+ * memory management becomes a problem in the future, the hash table could store nodes
+ * that stores a PID and a pointer to a job, and the job could be freed upon
+ * completion (a NULL pointer would indicate the PID is completed).
  */
  
 #ifndef __JobHashTable_h__
@@ -46,6 +61,7 @@ class JobHashTable {
 		bool is_empty();
 		
 	private:
+		double LOAD_FACTOR_THRESHOLD = .8;
 		static const int DEFAULT_CAP = 100;
 		
 		int capacity; //N (number of buckets)

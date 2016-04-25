@@ -1,11 +1,15 @@
 /*
  * Queue.h
  *
- * This is the header for a Queue that was originally written for HW3 but I made
- * modifications that allows the queue's API to resemble a C++ STL queue
- * but with a few extra functions that allows me to improve the complexity
- * of the scheduler
+ * This Queue implementation was originally written for a previous homework but I made
+ * modifications that allows the queue's API to exactly resemble many important functions
+ * of the C++ STL queue API. The only addition to STL-like functions is a force_pop that
+ * allows me to improve the complexity of the scheduler when the client wants to
+ * forcefully kill a premature process
  *
+ * It uses a linked list of Nodes containing pointers to jobs. While this might not 
+ * optimize complexity, it does not make a significant impact on the overhead of the
+ * Scheduler given the queue's purpose.
  */
 
 #ifndef JOBQUEUE_H_
@@ -14,38 +18,23 @@
 #include "Job.h"
 
 class JobQueue {
-public:
-        // constructor
-        JobQueue();
-
-        // destructor
+	public:
+         JobQueue();
         ~JobQueue();
-
-        // push a ponter to a job onto at the back of the queue
+        
+        //All following functions resemble an STL queue
         void push(Job *j);
-
-        // pop a job from the front of the queue
         void pop();
-
-        // returns true if there are no elements in the
-        // queue, false if the queue has elements
         bool empty();
-        
-        //returns the front but does not delete, just like an STL queue
         Job *front();
-        
         int size();
         
-        //force remove a job from somewhere within the queue. Worst case O(n) but
-        //average case is much better than having to do a dequeue/enqueue
-        //cycle from the client's side
+        //Allows removal of a job by PID from anywhere in the queue
         bool force_pop(int pid);
-        
 
-private:
-	//See .cpp for diagram of ADT. Next leads to
-	//the back, where pushs occur, and prev leads
-	//to the front, where pops occur.
+	private:
+	//See the .cpp file for diagram of ADT -- next leads to the back, and prev leads to
+	//the front
 	struct Node {
 		Job  *head;
 		Node *next;

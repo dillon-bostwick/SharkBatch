@@ -1,10 +1,16 @@
+/*
+ * Job.cpp
+ * by Dillon Bostwick
+ * see Job.h for details
+ */
+
 #include <exception>
 #include <iostream>
 #include "Job.h"
 
 using namespace std;
 
-//A "latent" job is a job with a pid and nothing else
+//Initialize a job as latent
 Job::Job(int pid) {
 	this->pid = pid;
 	this->status = LATENT;
@@ -16,6 +22,9 @@ Job::~Job() {
 	//TODO
 }
 
+//Operational methods/////////////////////////////////////////////////////////////////////
+
+//Convert a LATENT job to a WAITING job that has an execTime and resources
 void Job::prepare(int execTime, int resources) {
 	if (this->status != LATENT) {throw runtime_error("Only initialize latent jobs");};
 	
@@ -25,6 +34,8 @@ void Job::prepare(int execTime, int resources) {
 	this->status = WAITING;
 }
 
+//Decrease the execTime by the passed time parameter. Set status to COMPLETE if the
+//execTime depleted in its allocated time
 int Job::decrease_time(int time) {
 	if (execTime <= time) {
 		status = COMPLETE;
@@ -34,6 +45,19 @@ int Job::decrease_time(int time) {
 		return time;
 	}
 }
+
+//Remove a job by PID from the dependency vector
+void Job::remove_dependency(int pid) {
+	for (unsigned i = 0; i < dependencies.size(); i++) {
+		if (dependencies[i]->get_pid() == pid) {
+			//O(1) popping solution from Stack Overflow
+			swap(dependencies[i], dependencies.back());
+			dependencies.pop_back();
+		}
+	}
+}
+
+//Setters and getters/////////////////////////////////////////////////////////////////////
 
 int Job::get_pid() {
 	return pid;
@@ -51,32 +75,12 @@ void Job::set_status(Status status) {
 	this->status = status;
 }
 
-Status Job::get_status() {
+Job::Status Job::get_status() {
 	return status;
 }
 
 void Job::add_successor(Job *j) {
 	successors.push_back(j); //always appends to the back of the vector
-}
-
-void Job::print_successors() {
-	if (successors.empty()) {
-		cout << "N/A" << endl;
-	}
-	
-	for (unsigned i = 0; i < successors.size(); i++) {
-		cout << successors[i]->get_pid() << endl;
-	}
-}
-
-void Job::print_dependencies() {
-	if (dependencies.empty()) {
-		cout << "N/A" << endl;
-	}
-	
-	for (unsigned i = 0; i < dependencies.size(); i++) {
-		cout << dependencies[i]->get_pid() << endl;
-	}
 }
 
 JobList *Job::get_successors() {
@@ -91,16 +95,6 @@ bool Job::no_successors() {
 	return successors.empty();
 }
 
-void Job::remove_dependency(int pid) {
-	for (unsigned i = 0; i < dependencies.size(); i++) {
-		if (dependencies[i]->get_pid() == pid) {
-			//O(1) solution from Stack Overflow
-			swap(dependencies[i], dependencies.back());
-			dependencies.pop_back();
-		}
-	}
-}
-
 void Job::add_dependency(Job* j) {
 	dependencies.push_back(j);
 }
@@ -109,20 +103,8 @@ bool Job::no_dependencies() {
 	return dependencies.empty();
 }
 
-int Job::get_latency() {
-	return clockBegin - clockInsert;
-}
-
-int Job::get_response() {
-	return clockComplete - clockInsert;
-}
-
 int Job::get_original_exec() {
 	return originalExecTime;
-}
-
-int Job::get_turnaround() {
-	return clockComplete - clockBegin;
 }
 
 void Job::set_clock_insert(int time) {
@@ -143,6 +125,45 @@ void Job::set_longest_chain(int num) {
 
 int Job::get_longest_chain() {
 	return longestSuccesschain;
+}
+
+//The follow 3 functions are based off basic scheduler criteria; for a brief overview, see
+//http://www.cs.tufts.edu/comp/111/notes/Scheduling.pdf
+//For more detailed information, see the ReadMe
+
+int Job::get_turnaround() {
+	return clockComplete - clockBegin;
+}
+
+int Job::get_latency() {
+	return clockBegin - clockInsert;
+}
+
+int Job::get_response() {
+	return clockComplete - clockInsert;
+}
+
+
+//Methods for testing/////////////////////////////////////////////////////////////////////
+
+void Job::print_successors() {
+	if (successors.empty()) {
+		cout << "N/A" << endl;
+	}
+	
+	for (unsigned i = 0; i < successors.size(); i++) {
+		cout << successors[i]->get_pid() << endl;
+	}
+}
+
+void Job::print_dependencies() {
+	if (dependencies.empty()) {
+		cout << "N/A" << endl;
+	}
+	
+	for (unsigned i = 0; i < dependencies.size(); i++) {
+		cout << dependencies[i]->get_pid() << endl;
+	}
 }
 
 

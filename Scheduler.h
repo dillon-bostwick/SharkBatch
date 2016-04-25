@@ -17,16 +17,18 @@ class Scheduler {
     	void run();
 
 	private:
-	
 		//constants
+    	static const int MAX_MEMORY = 1000;   // KB
+    	static const unsigned long JIFFIE_TIME = 100;
+    	
+    	//Set by constructor and 
 	    int BASE_QUANTUM;
 	    bool VARY_QUANTA;
 		bool CHAIN_WEIGHTING;
 
-    	static const int MAX_MEMORY = 1000;   // KB
+
     	
-    	
-    	static const unsigned long JIFFIE_TIME = 100;
+
     	//Jiffie time is an arbitrary unit of time, which is the minimum unit for which
     	//the CPU must process work. All execTimes of jobs are represented as jiffie units.
     	//This should be entered as microseconds of wallclock time to sleep system
@@ -68,7 +70,7 @@ class Scheduler {
     	bool find_next_priority();
     	void main_menu_input(char input);
     	void make_job_from_cin();
-    	void read_dependencies(Job *j, bool externalFile, std::istream &inFile);
+    	void read_dependencies(Job *j, bool externalFile, const std::istream &inFile);
     	void start_processing(Job *new_process);
     	void lookup_from_input();
     	void update_successors();
