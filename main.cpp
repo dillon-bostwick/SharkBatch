@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <string>
+#include <stdlib.h>
 #include "Scheduler.h"
 
 using namespace std;

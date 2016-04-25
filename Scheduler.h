@@ -77,9 +77,11 @@ class Scheduler {
     	
     	//Methods used for IO handling////////////////////////////////////////////////////
 
-    	void read_dependencies (Job *j, bool externalFile, const std::istream &inFile);
-    	void convert_to_latent (Job *j);
     	bool make_job_from_line(std::istream &inFile);
+    	bool file_error		   (std::string str,  int pid, std::istream &inFile);
+    	void read_dependencies (Job *j, bool externalFile, std::istream &inFile);
+    	void convert_to_latent (Job *j);
+    	void job_on_console    (Job *j);
     	void main_menu_input(char input);
     	void output_status(int slice);
     	void lookup_from_input();
@@ -87,6 +89,10 @@ class Scheduler {
     	void add_from_file();
     	void update_stats();
     	void make_job_from_cin();
+    	int  cin_pid();
+    	int  cin_exec_time();
+    	int  cin_resources();
+
 };
 
 #endif // __scheduler_h__

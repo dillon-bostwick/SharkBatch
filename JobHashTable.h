@@ -21,13 +21,12 @@
  * EXPANDING:
  * When the load factor hits .8, the table always doubles in capacity.
  *
- *
  * Scheduler needs to know the PIDs of all completed processses. Currently, when a job is 
  * completed, the job is stored by the program and is not freed from memory until
  * SharkBatch is terminated. For convenience, SharkBatch is implemented such that if
  * memory management becomes a problem in the future, the hash table could store nodes
  * that stores a PID and a pointer to a job, and the job could be freed upon
- * completion (a NULL pointer would indicate the PID is completed).
+ * completion (a NULL jobptr would indicate the PID is completed).
  */
  
 #ifndef __JobHashTable_h__
@@ -37,8 +36,6 @@
 #include "Job.h"
 
 class Job;
-
-//if a job is complete, then the pid is stored but the jobPtr is null
 
 class JobHashTable {
 	public:
@@ -54,6 +51,9 @@ class JobHashTable {
 		
 		//Pop a job from the hash table (the job still exists in the heap)
 		bool remove(int pid);
+		
+		//Iterate through all job pointers and free each job from the heap
+		void destroy_all_jobs();
 		
 		//print all to cout in no order
 		void print();

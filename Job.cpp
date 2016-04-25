@@ -18,10 +18,6 @@ Job::Job(int pid) {
 	longestSuccesschain = 0;
 }
 
-Job::~Job() {
-	//TODO
-}
-
 //Operational methods/////////////////////////////////////////////////////////////////////
 
 //Convert a LATENT job to a WAITING job that has an execTime and resources

@@ -17,7 +17,7 @@
  * Clock time is recorded upon insertion, process beginning, and process complete only
  * for the purpose of calculating statistics.
  *
- * A job is always initialized as "LATENT." A latent job has a PID, at least one successor,
+ * A job is always initialized as "LATENT." A latent job has a PID, at least one successor
  * and nothing else. Technically, a latent job's getters might segfault, but the Scheduler
  * won't let this happen. The Scheduler creates latent jobs when a new job refers to a PID
  * that does not exist yet as a dependency. This allows a user to make a job wait for an
@@ -58,8 +58,6 @@ class Job {
 		//public methods//////////////////////////////////////////////////////////////////
 		
 		 Job(int pid); //creates a latent job
-		~Job();
-		
 		
 		void prepare(int execTime, int resources); //turns a latent job into a waiting job
 												   //with an execTime and resources

@@ -5,6 +5,7 @@
  */
 
 #include <exception>
+#include <stdexcept>
 #include <stddef.h>
 #include <iostream>
 #include <vector>
@@ -30,6 +31,7 @@ JobHashTable::JobHashTable(int capacity) {
 	LOAD_FACTOR_THRESHOLD = .8;
 }
 
+//Destructor frees buckets
 JobHashTable::~JobHashTable() {
 	delete [] buckets;
 }
@@ -74,6 +76,16 @@ bool JobHashTable::remove(int pid) {
 		}
 	}
 	return false;
+}
+
+//Used by the scheduler destructor as the easiest way to find all existing jobs and
+//free them from the heap. Iterate through every job in the hash table and delete the job
+void JobHashTable::destroy_all_jobs() {
+	for (int i = 0; i < capacity; i++) {
+		for (unsigned j = 0; j < buckets[i].size(); j++) {
+			delete buckets[i][j];
+		}
+	}
 }
 
 //Print to cerr for testing; does not sort PIDs in order

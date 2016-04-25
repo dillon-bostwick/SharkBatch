@@ -13,6 +13,7 @@
  */
  
 #include <exception>
+#include <stdexcept>
 #include <iostream>
 #include "JobQueue.h"
 
@@ -29,7 +30,6 @@ JobQueue::JobQueue() {
 //Deep traverse to delete everything; job pointer heads are not deleted
 JobQueue::~JobQueue() {
 	if (frontPtr != NULL) {
-
 		Node* current = frontPtr;
 
 		while (current != backPtr) {
