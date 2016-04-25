@@ -27,7 +27,7 @@ class JobQueue {
         void pop();
         bool empty();
         Job *front();
-        int size();
+        int  size();
         
         //Allows removal of a job by PID from anywhere in the queue
         bool force_pop(int pid);
@@ -43,7 +43,7 @@ class JobQueue {
 	
 	Node *frontPtr;
 	Node *backPtr;
-	int sizeCount;
+	int   sizeCount;
 };
 
 #endif /* QUEUE_H_ */

@@ -61,15 +61,16 @@ class JobHashTable {
 		bool is_empty();
 		
 	private:
-		double LOAD_FACTOR_THRESHOLD = .8;
 		static const int DEFAULT_CAP = 100;
-		
+				  double LOAD_FACTOR_THRESHOLD; //= .8 (my C++11 compiler doesnt support
+				  								//non-integral const - see constructor)
+				  								
 		int capacity; //N (number of buckets)
 		int size;     //n (number of jobs)
 		
 		std::vector<Job*> *buckets; //a pointer to an array of vectors of pointers to jobs
 				
-		int hash(int pid); //The hash function
+		int  hash(int pid);
 		void expand();
 };
 

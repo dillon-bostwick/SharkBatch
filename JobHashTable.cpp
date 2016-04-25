@@ -17,6 +17,8 @@ JobHashTable::JobHashTable() {
 	capacity = DEFAULT_CAP;
 	buckets = new vector<Job*>[capacity];
 	size = 0;
+	
+	LOAD_FACTOR_THRESHOLD = .8;
 }
 
 //create the buckets with a specific beginning capacity
@@ -24,13 +26,15 @@ JobHashTable::JobHashTable(int capacity) {
 	this->capacity = capacity;
 	buckets = new vector<Job*>[capacity];
 	size = 0;
+	
+	LOAD_FACTOR_THRESHOLD = .8;
 }
 
 JobHashTable::~JobHashTable() {
 	delete [] buckets;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
+//Public methods//////////////////////////////////////////////////////////////////////////
 
 
 //Return a pointer to a job; if the job doesn't exist, returns NULL -- best O(1)
@@ -92,7 +96,7 @@ bool JobHashTable::is_empty() {
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
+//Private methods/////////////////////////////////////////////////////////////////////////
 
 /*
  * It's easy to change the hash function via the hash(pid) definition. Right now, it is

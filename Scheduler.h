@@ -14,75 +14,79 @@ class Scheduler {
 		 Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chainWeighting);
 		~Scheduler();
 
+		//Runtime loop that exists until exit specified by user (or exception thrown)
     	void run();
 
 	private:
-		//constants
-    	static const int MAX_MEMORY = 1000;   // KB
+		//Constants///////////////////////////////////////////////////////////////////////
+		
+    	static const int MAX_MEMORY = 1000; // Arbitrary unit -- could be KB
     	static const unsigned long JIFFIE_TIME = 100;
+    	//A jiffie is an arbitrary unit of time, and is the minimum unit for which
+    	//the CPU must process work. The JIFFIE_TIME constant represents number of
+    	//microseconds of wallclock time equivalent to one jiffie of work in realtime
+    	//SharkBatch processing
     	
-    	//Set by constructor and 
-	    int BASE_QUANTUM;
-	    bool VARY_QUANTA;
+    	//Vars set by constructor and, at this point, cannot be changed during runtime
+	    int BASE_QUANTUM;	   //Baseline quantum -- see ReadMe
+	    bool VARY_QUANTA;	   //Mode flags -- see ReadMe
 		bool CHAIN_WEIGHTING;
+		
+		//Objects/////////////////////////////////////////////////////////////////////////
 
-
+		CursesHandler win; //The window which processes all non-fstream I/O
     	
-
-    	//Jiffie time is an arbitrary unit of time, which is the minimum unit for which
-    	//the CPU must process work. All execTimes of jobs are represented as jiffie units.
-    	//This should be entered as microseconds of wallclock time to sleep system
-    	//per jiffie
-
-		CursesHandler win; //The window which handles ALL of the scheduler's I/O
-    	
-    	//Storage
-    	std::vector<JobQueue> runs; //A vector of queues of pointers to Jobs
+    	std::vector<JobQueue> runs; //A vector of queues of pointers to running jobs
 
     	JobHashTable jobs; //A hashtable of pointers to all Jobs including those
-    					   //that are waiting, running, and completed
+    					   //that are latent, waiting, running, and completed
     					   
-    	JobQueue waitingOnMem; //No dependencies left but not enough memory available
+    	JobQueue waitingOnMem; //If a job has no dependencies but there is not enough
+    						   //memory available, they wait here (right now it is
+    						   //simple FIFO - must pop from the front even if a big
+    						   //job is clogging up the queue)
+    	
+    	//Variables///////////////////////////////////////////////////////////////////////
+    	
 		int memoryUsed; //Total memory used by all current processes
 		
-		
-
-    	//These are changed for each processor iteration but are stored in private so they
-    	//can be accessed everywhere
-    	Job *current; //current job being processed
+    	//Changes per processor iteration but stored for easy access by methods:
+    	Job *current;  //current job being processed
     	int  priority; //current priority of current job
-    	bool paused;
-    	bool exit;
-    	
-    	
+    	bool paused;   //whether processing loop is paused
+    	bool exit;     //end the program if true
     	
     	//Used for computing statistics
-    	int    runClock;
-    	int    totalComplete;
-		int    totalLatency;
+    	int    runClock; //total jiffies processed since initialization
+    	int    totalComplete; //num jobs completed
+		int    totalLatency; //
 		int    totalTurnaround;
 		int    totalResponse;
 		double totalTurnPerBurst;
 		double totalLatencyPerBurst;
-
-    	//private functions and helpers
+		
+		//Methods used for scheduling and processing//////////////////////////////////////
+		
+		void start_processing(Job *new_process);
+		void deep_search_update(Job *j, int num);  
     	void move_from_waiting();
     	bool find_next_priority();
-    	void main_menu_input(char input);
-    	void make_job_from_cin();
-    	void read_dependencies(Job *j, bool externalFile, const std::istream &inFile);
-    	void start_processing(Job *new_process);
-    	void lookup_from_input();
     	void update_successors();
     	void process_job();
-    	void kill_job();
-    	void convert_to_latent(Job *j);
-    	void add_from_file();
-    	bool make_job_from_line(std::istream &inFile);
-    	void output_status(int slice);
     	void complete_processing();
-    	void update_stats();	
-    	void deep_search_update(Job *j, int num);
+    	
+    	//Methods used for IO handling////////////////////////////////////////////////////
+
+    	void read_dependencies (Job *j, bool externalFile, const std::istream &inFile);
+    	void convert_to_latent (Job *j);
+    	bool make_job_from_line(std::istream &inFile);
+    	void main_menu_input(char input);
+    	void output_status(int slice);
+    	void lookup_from_input();
+    	void kill_job();
+    	void add_from_file();
+    	void update_stats();
+    	void make_job_from_cin();
 };
 
 #endif // __scheduler_h__

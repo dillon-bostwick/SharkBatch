@@ -19,15 +19,14 @@
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////////////////
-//Constructing and destructing
+// Constructing and destructing //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 
-/* Create the runs by initializing runs as a vector of queues, the size of which is
- * specified by the parameter. The quanta are initializing with Q0 starting as BASE
- * time, and subsequent priorities have DIFF_QUANTUM less time than the priority beneath
- * them. There cannot be more priorities than BASE_QUANTUM / DIFF_QUANTUM.
- */
- 
+// Create the runs by initializing runs as a vector of queues, the size of which is
+// specified by the parameter. The quanta are initializing with Q0 starting as BASE
+// time, and subsequent priorities have DIFF_QUANTUM less time than the priority beneath
+// them. There cannot be more priorities than BASE_QUANTUM / DIFF_QUANTUM.
+//
 Scheduler::Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chainWeighting) {
 	if (numQueues > baseQuantum) {
 		throw logic_error("baseQuantum time must be larger than numQueues");
@@ -36,22 +35,22 @@ Scheduler::Scheduler(int baseQuantum, int numQueues, bool varyQuanta, bool chain
 	//create the runs vector
 	runs.resize(numQueues);
 	
-	this->BASE_QUANTUM = baseQuantum;
-	this->VARY_QUANTA = varyQuanta;
+	this->BASE_QUANTUM    = baseQuantum;
+	this->VARY_QUANTA     = varyQuanta;
 	this->CHAIN_WEIGHTING = chainWeighting;
 
 	//The win object is already implicitly initialized with a Scheduler. We still need
 	//to call wireframe, which creates the UI skeleton
 	win.wireframe(numQueues);
-	win.mode_bar(varyQuanta, chainWeighting);
+	win.mode_bar (varyQuanta, chainWeighting);
 	
 	//other Scheduler data get initialized
-	memoryUsed = 0;
-	runClock = 0;
+	memoryUsed    = 0;
+	runClock      = 0;
 	totalComplete = 0;
 	
 	win.console_bar("Initialization successful");
-	win.console_bar(1, "Base quantum: %d", baseQuantum);
+	win.console_bar(1, "Base quantum: %d",     baseQuantum);
 	win.console_bar(2, "Number of queues: %d", numQueues);
 }
 
@@ -61,7 +60,7 @@ Scheduler::~Scheduler() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
-//Main loop of scheduler
+// Run loop //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 
 //Iterate through the Multilevel Feedback Queue and handle user input from the main menu
@@ -69,7 +68,7 @@ void Scheduler::run() {
 	//curses_startup();
 
 	paused = true;
-	exit = false;
+	exit   = false;
 	char inputChar;
 		
 	//print the initial states of all UI bars to the screen
@@ -110,7 +109,7 @@ void Scheduler::run() {
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
-//Functions that handle scheduling and processing runtime
+// Functions that handle scheduling and processing ///////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -139,9 +138,9 @@ bool Scheduler::find_next_priority() {
 //out a cool solution...	
 void Scheduler::move_from_waiting() {
 	while (!waitingOnMem.empty() && 
-		waitingOnMem.front()->get_resources() + memoryUsed <= MAX_MEMORY) {
-		start_processing(waitingOnMem.front());
-		waitingOnMem.pop();
+		    waitingOnMem.front()->get_resources() + memoryUsed <= MAX_MEMORY) {
+				start_processing(waitingOnMem.front());
+				waitingOnMem.pop();
 	}
 }
 
@@ -149,15 +148,17 @@ void Scheduler::move_from_waiting() {
 //status from Job::WAITING to RUNNING, push it to the highest priority queue, and add the 
 //resources to memory
 void Scheduler::start_processing(Job *new_process) {
-	win.feed_bar("Job #%d: Began processing", waitingOnMem.front()->get_pid()); //print to feed
+	win.feed_bar("Job #%d: Began processing", waitingOnMem.front()->get_pid()); //print
 	new_process->set_status(Job::RUNNING);
 	runs[runs.size() - 1].push(new_process); //add to the highest level priority
 	memoryUsed += new_process->get_resources(); //add resources to memory
 	new_process->set_clock_begin(runClock); //record runClock time (for statistics)
 }
 
+//Called when current has finished processing in it's allocated time slice. (Execute
+//similar tasks to above)
 void Scheduler::complete_processing() {
-	win.feed_bar("Job #%d: Job::COMPLETEd", current->get_pid()); //print to feed
+	win.feed_bar("Job #%d: completed", current->get_pid()); //print to feed
 	memoryUsed -= current->get_resources(); //take resources off memory
 	runs[priority].pop(); //pop from the queue
 	totalComplete++; //increment the Job::COMPLETE counter (used for statistics)
@@ -166,9 +167,15 @@ void Scheduler::complete_processing() {
 	//run eligible successors
 }
 
+//Given that current and priority are already set, determine the time slice and run
+//the clock / sleep / decrement execTime by that slice. If the job finished, call
+//complete_processing(), otherwise, move it to the appropriate place in the MLFQ
 void Scheduler::process_job() {
 	int slice = BASE_QUANTUM;
 	
+	//Given the mode, we determine the slice based off the original quantum different.
+	//First, if VARY_QUANTA, higher priorities have shorter quanta, and secondly, if
+	//CHAIN_WEIGHTING, the slice is factored by the longest chain number of the job
 	if (VARY_QUANTA) {
 		slice -= (BASE_QUANTUM / runs.size()) * priority;
 	}
@@ -185,23 +192,20 @@ void Scheduler::process_job() {
 		
 	output_status(slice); //update the status bar
 
-	//Check if the job Job::COMPLETEd in the allocated time slice	
+	//Check if the job completed in the allocated slice	
 	if (runs[priority].front()->get_status() == Job::COMPLETE) {
 		complete_processing();
 		update_stats();
 	} else {
-		//if the job wasn't Job::COMPLETEd then it must have used up it's slice and will now
-		//get bumped down a priority UNLESS it is already at priority == 0, in which case
-		//it will just get pushed to the back of the baseline queue for infinite round
-		//robin until completion (all the long but unimportant processes
-		//end up there
-			runs[priority].pop();
+		//if the job wasn't completed then it must have used up it's slice and will now
+		//get bumped down a priority UNLESS it is already at base queue, in which case
+		//it will just get pushed to the back for infinite round robin until completion
+		runs[priority].pop();
 			
-			if (priority > 0) {
-				priority--;
-			}
-			
-			runs[priority].push(current);
+		if (priority > 0) {
+			priority--;
+		}
+		runs[priority].push(current);
 	}
 }
 
@@ -220,7 +224,7 @@ void Scheduler::update_successors() {
 	}
 }
 
-//Longest chain algorithm. A job's longest chain is the net jobs that must be Job::COMPLETEd
+//Longest chain algorithm. A job's longest chain is the net jobs that must be completed
 //to finish the longest possible chain of successors. This method starts with a new
 //job j that was added, and recalculates the times of all jobs that are in j's chain of
 //dependencies -- note j is NOT the job for which we want to recalculate the longest chain
@@ -254,27 +258,20 @@ void Scheduler::deep_search_update(Job *j, int num) {
 
 
 
+
+
+
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
+//Functions that handle IO and main menu requests/////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
-//Functions that handle main menu requests
 //////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////
 
-//Main menu input interpretor
+//Main menu input character interpreter
 void Scheduler::main_menu_input(char input) {
 	switch (input) {
 		case 'e':
@@ -303,11 +300,9 @@ void Scheduler::main_menu_input(char input) {
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////////////////////
-//Functions that create jobs from ncurses input or an fstream file
+//Functions that help create new jobs
 //////////////////////////////////////////////////////////////////////////////////////////
-
 
 //Add a job from cin. Record execTime, resources, and then call read_dependencies()
 //to generate a pointer to a IntBST that includes every PID of each dependency
@@ -315,8 +310,8 @@ void Scheduler::main_menu_input(char input) {
 //check if there are any dependencies. If the dependency tree is already Job::COMPLETEly
 //empty, then start processing the job immediately (i.e. it inters into the highest
 //priority of the Multilevel Feedback Queue), otherwise, it enters the JobHeap
-//"Job::WAITING" until the IntBST dependencies is Job::COMPLETEly empty, in which case it is
-//popped from the JobHeap.
+//"Job::WAITING" until the IntBST dependencies is Job::COMPLETEly empty, in which case it
+//is popped from the JobHeap.
 void Scheduler::make_job_from_cin() {
 	int pid;
 	int execTime;

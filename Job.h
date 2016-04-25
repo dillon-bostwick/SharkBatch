@@ -40,12 +40,12 @@ class Job {
 	public:
 	
 		/* Status enum:
-		 * LATENT: The job has been referenced by the dependencies of some other job, so
-		 * 			the PID and at least one successor has been recorded, but no other
-		 *			metadata exists because the job has not actually been added by client
-		 * WAITING: The job has been officially added as a future processes with metadata,
-		 *			but is either waiting on more memory or on dependencies.
-		 * RUNNING: The job is now a processes in the multilevel feedback queues
+		 * LATENT:   The job has been referenced by the dependencies of some other job, so
+		 * 			 the PID and at least one successor has been recorded, but no other
+		 *			 metadata exists because the job has not actually been added by client
+		 * WAITING:  The job has been officially added as a future processes with metadata
+		 *			 but is either waiting on more memory or on dependencies.
+		 * RUNNING:  The job is now a processes in the multilevel feedback queues
 		 * COMPLETE: The job's execution time has hit 0. It will be freed from the heap.
 		 *
 		 * This enum is injected everywhere.
@@ -79,15 +79,16 @@ class Job {
 		JobList *get_dependencies();
 
 		//set stuff//////////////////////
-		int  decrease_time(int time);
-		void add_dependency(Job *j);
-		void add_successor(Job *j);
-		void remove_dependency(int pid);
-		void set_status(Status status);
-		void set_clock_insert(int time);
-		void set_clock_begin(int time);
+		
+		void add_dependency    (Job *j);
+		void add_successor     (Job *j);
+		void remove_dependency (int pid);
+		void set_clock_insert  (int time);
+		void set_clock_begin   (int time);
 		void set_clock_complete(int time);
-		void set_longest_chain(int num);
+		int  decrease_time	   (int time);
+		void set_longest_chain (int num);
+		void set_status		   (Status status);
 
 		//determine stuff/////////////////
 		bool no_dependencies();
