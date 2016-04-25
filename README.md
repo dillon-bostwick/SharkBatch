@@ -15,7 +15,7 @@ Uninstall:<br>
 ```$ make clean```<br><br>
 
 ##Command line
--c: Chain Weighting Mode (see below)
+-c: Chain Weighting Mode (see below)<br>
 -q: Varying Quanta Mode (see below)
 baseQuantum: Size of quantum (in jiffies) of the baseline priority
 numPriorities: number of levels to the multilevel feedback queue (see below)
@@ -106,8 +106,8 @@ complexity does begin to cause a noticeably lag when uploading a file with as li
 For a job, the following statistics represent the time elapsed between a job's key events,
 and here is how I define them:
 
-Turnaround = Complete - Begin
-Latency    = Begin    - Insert
+Turnaround = Complete - Begin<br>
+Latency    = Begin    - Insert<br>
 Response   = Complete - Insert
 
 Throughput = # complete jobs / total time elapsed
