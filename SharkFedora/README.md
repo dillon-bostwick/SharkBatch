@@ -8,10 +8,11 @@ jobs on-the-fly.
 
 ##Installation & Running
 Install:<br>
+```$ cd SharkOSX``` or ```$ cd SharkFedora```<br>
 ```$ make```<br>
 Run program:<br>
 ```$ ./sharkbatch -cq baseQuantum numPriorities```<br>
-Uninstall:<br>
+Uninstall (optional):<br>
 ```$ make clean```<br><br>
 
 ##Command line
@@ -150,9 +151,27 @@ use this number to make any decisions regarding time slices or priotizing, makin
 possible to remove this variable and instead make jobs block or quit whenever they are
 done with the CPU.
 
+##Memory leaks
+Depending on your version of the NCurses library, running valgrind might report some
+blocks listed as "still reachable." If you look at the detailed report, this is all due to
+NCurses stuff. It is completely harmless (OS will free the blocks on its own) but it
+can not be avoided unless you uninstall and reconfigure your NCurses library.
+Here is the reason why:
+
+http://invisible-island.net/ncurses/ncurses.faq.html#config_leaks
+
+"Any implementation of curses must not free the memory associated with a screen, since
+(even after calling endwin()), it must be available for use in the next call to refresh().
+There are also chunks of memory held for performance reasons."
+
+##Data structures
+See the spec PDF page 2 for high level details (a bit out of date, a new diagram in
+progress). <br>
+See comments in .h files for low level details.
+
 ##References
 
-##More about job processing
+###More about job processing
 
 http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf
 http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf
@@ -167,7 +186,7 @@ https://en.wikipedia.org/wiki/Fixed-priority_pre-emptive_scheduling
 http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
 http://dl.acm.org/citation.cfm?doid=321707.321717
 
-##Thank you
+###Thank you
 
 Thank you to Maxwell Bernstein and Erica Schwartz for guiding me through the project over
 the last few weeks
