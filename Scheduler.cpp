@@ -10,8 +10,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-//#include <thread>
-//#include <chrono>
+#include <thread>
+#include <chrono>
 #include <stdlib.h>
 #include <curses.h>
 #include "Scheduler.h"
@@ -183,9 +183,7 @@ void Scheduler::process_job() {
 	//"run" current (i.e. decrement the job's remaining execTime) for a time slice that
 	//is as long as current's priority's time quantum will allow OR until complete
 	runClock += current->decrease_time(slice);
-	//std::this_thread::sleep_for(std::chrono::microseconds(JIFFIE_TIME * slice));
-	//NOTE: RedHat Fedora does not support thread and chrono... sleep function is
-	//commented out for now
+	std::this_thread::sleep_for(std::chrono::microseconds(JIFFIE_TIME * slice));
 		
 	output_status(slice); //update the status bar
 
@@ -374,8 +372,8 @@ bool Scheduler::make_job_from_line(istream &inFile) {
 	int  resources;
 	
 	inFile >> pid;
-	inFile >> execTime
-	inFile >> resources
+	inFile >> execTime;
+	inFile >> resources;
 	
 	Job *j = jobs.find(pid);
 	win.clear_console();
@@ -444,13 +442,17 @@ void Scheduler::read_dependencies(Job *j, bool externalFile, istream &inFile) {
 }
 
 //get pid either from cin or from istream
-int get_dependent_pid(bool externalFile, int i, istream &inFile) {
+int Scheduler::get_dependent_pid(bool externalFile, int i, istream &inFile) {
+	int pid;
+	
 	if (externalFile) { 
 		inFile >> pid;
 	} else {
 		pid = win.get_int_input();
 		win.keep_cursor_in_menu(i);
 	}
+	
+	return pid;
 }
 	
 

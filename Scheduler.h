@@ -79,7 +79,7 @@ class Scheduler {
 
     	bool make_job_from_line (std::istream &inFile);
     	bool file_error		    (std::string str, int pid,  std::istream &inFile);
-    	int get_dependent_pid   (bool externalFile, int i,  std::istream &inFile)
+    	int get_dependent_pid   (bool externalFile, int i,  std::istream &inFile);
     	void read_dependencies  (Job *j, bool externalFile, std::istream &inFile);
     	void convert_to_latent  (Job *j);
     	void job_on_console     (Job *j);
