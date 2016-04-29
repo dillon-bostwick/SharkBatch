@@ -9,12 +9,13 @@ terms of queueing) and a more recent cloud task scheduler (in terms of dependenc
 management, e.g. that of Azure).
 
 ##Installation & Running
+(Change in to src)<br>
 Install:<br>
 ```$ make```<br>
 Run program:<br>
 ```$ ./sharkbatch -cq baseQuantum numPriorities```<br>
 Uninstall (optional):<br>
-```$ make clean```<br><br>
+```$ make clean```<br>
 
 ##Command line
 -c: Chain Weighting Mode (see below)<br>
@@ -35,7 +36,7 @@ and could even out how the scheduler handles a variety of burst lengths
 ##Compatibility
 I built everything in OS X El Capitan.
 
-Update: Compiler on the Fedora machines still can't get <thread> and <chrono>, need to
+Update: Compiler on the Fedora machines still can't include thread and chrono, need to
 update with libstdc++, this is only a problem in the Scheduler.cpp file.
 
 Other than that, everything else compiles with both g++ and clang++ in OSX and in Fedora
@@ -98,7 +99,7 @@ The idea behind this is to increase overall throughput and decrease overall resp
 In practice, only a negligible difference was observed when compared with the same
 dataset. I still think this is an interesting idea though and would want to experiment
 more with different optimization methods. Hopefully SharkBatch could be used as a tool to
-quickly get efficiency statistics on different dependency evaluators.  <br><br><br>
+quickly get efficiency statistics on different dependency evaluators.  <br>
 
 Microsoft Azure's scheduler is the closest thing I've been able to find to this; it can
 take a batch, determine estimated execution times and dependencies (hard or soft), and
@@ -162,20 +163,20 @@ There are also chunks of memory held for performance reasons."
 
 ####More about job processing
 
-http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf
-http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf
-http://www.cs.tufts.edu/comp/111/
-https://www.cis.upenn.edu/~sudipto/mypapers/throughput.pdf
-https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/5_CPU_Scheduling.html
-http://www.personal.kent.edu/~rmuhamma/OpSystems/Myos/cpuScheduling.htm
-https://en.wikipedia.org/wiki/Scheduling_(computing)
-https://en.wikipedia.org/wiki/Multilevel_feedback_queue
-https://en.wikipedia.org/wiki/Fixed-priority_pre-emptive_scheduling
-http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
+http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf<br>
+http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf<br>
+http://www.cs.tufts.edu/comp/111/<br>
+https://www.cis.upenn.edu/~sudipto/mypapers/throughput.pdf<br>
+https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/5_CPU_Scheduling.html<br>
+http://www.personal.kent.edu/~rmuhamma/OpSystems/Myos/cpuScheduling.htm<br>
+https://en.wikipedia.org/wiki/Scheduling_(computing)<br>
+https://en.wikipedia.org/wiki/Multilevel_feedback_queue<br>
+https://en.wikipedia.org/wiki/Fixed-priority_pre-emptive_scheduling<br>
+http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf<br>
 http://dl.acm.org/citation.cfm?doid=321707.321717
 
 ####Thank you
 
-Thank you to Maxwell Bernstein and Erica Schwartz for guiding me through the project over
-the last few weeks
+Thank you to Maxwell Bernstein and Erica Schwartz at Tufts for guiding me through the
+project over the last few weeks
 
