@@ -8,7 +8,6 @@ jobs on-the-fly.
 
 ##Installation & Running
 Install:<br>
-```$ cd SharkOSX``` or ```$ cd SharkFedora```<br>
 ```$ make```<br>
 Run program:<br>
 ```$ ./sharkbatch -cq baseQuantum numPriorities```<br>
@@ -119,10 +118,10 @@ wallclock time is never recorded.
 Here are some statistics I came up with to try and understand the efficiency of the
 scheduler:
 
-Avg latency
-Avg response time
-avg turnaround time
-avg turnaround per burst time = mean(turnaround/burst for each job)
+Avg latency<br>
+Avg response time<br>
+avg turnaround time<br>
+avg turnaround per burst time = mean(turnaround/burst for each job)<br>
 Avg latency per burst time = mean(latency/burst for each job)
 
 I have not seen the last two statistics emphasized in any literature so I am not sure
@@ -171,7 +170,7 @@ See comments in .h files for low level details.
 
 ##References
 
-###More about job processing
+####More about job processing
 
 http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf
 http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf
@@ -186,7 +185,7 @@ https://en.wikipedia.org/wiki/Fixed-priority_pre-emptive_scheduling
 http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf
 http://dl.acm.org/citation.cfm?doid=321707.321717
 
-###Thank you
+####Thank you
 
 Thank you to Maxwell Bernstein and Erica Schwartz for guiding me through the project over
 the last few weeks
