@@ -41,6 +41,11 @@ update with libstdc++, this is only a problem in the Scheduler.cpp file.
 
 Other than that, everything else compiles with both g++ and clang++ in OSX and in Fedora
 
+##Contributing
+Feel free to mess around with the scheduling algorithm. The heart of it is in
+Scheduler.cpp, which is divided into methods that help the actual scheduling algorithm,
+and methods for handling menu I/O.
+
 ##The Multilevel Feedback Queue Scheduling Algorithm
 
 In SharkBatch, when jobs are created, a priority is never specified. All jobs start in
