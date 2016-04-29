@@ -16,8 +16,8 @@ Uninstall (optional):<br>
 
 ##Command line
 -c: Chain Weighting Mode (see below)<br>
--q: Varying Quanta Mode (see below)
-baseQuantum: Size of quantum (in jiffies) of the baseline priority
+-q: Varying Quanta Mode (see below)<br>
+baseQuantum: Size of quantum (in jiffies) of the baseline priority<br>
 numPriorities: number of levels to the multilevel feedback queue (see below)
 
 The idea behind command line arguments is that the user can quickly and easily experiment
