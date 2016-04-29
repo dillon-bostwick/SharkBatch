@@ -163,7 +163,7 @@ There are also chunks of memory held for performance reasons."
 
 ####More about job processing
 
-http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf<br>
+http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf<br> 
 http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf<br>
 http://www.cs.tufts.edu/comp/111/<br>
 https://www.cis.upenn.edu/~sudipto/mypapers/throughput.pdf<br>
