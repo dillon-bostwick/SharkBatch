@@ -182,7 +182,4 @@ http://dl.acm.org/citation.cfm?doid=321707.321717
 
 ####Thank you
 
-Thank you to Maxwell Bernstein and Erica Schwartz at Tufts for guiding me through the
-project over the last few weeks
-
-For more information and to view other projects, see me at http://dilloncb.com
+[Dillon Bostwick](http://dillonbostwick.org)
