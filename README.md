@@ -11,8 +11,8 @@ Uninstall (optional):<br>
 ##CLI
 ```-c```: Chain Weighting Mode (see below)<br>
 ```-q```: Varying Quanta Mode (see below)<br>
-baseQuantum: Size of quantum (in jiffies) of the baseline priority<br>
-numPriorities: number of levels to the multilevel feedback queue (see below)
+```baseQuantum```: Size of quantum (in jiffies) of the baseline priority<br>
+```numPriorities```: number of levels to the multilevel feedback queue (see below)
 
 ##Compatibility
 Update: Can't include thread and chrono for the latest clang on Fedora, need to
