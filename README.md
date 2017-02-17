@@ -55,7 +55,7 @@ The difference between each priority level is constant. This is commonly used to
 priorities (see the articles above
 
 
-##Scheduling statistics reference:
+##Scheduling statistics reference
 
 For a job, the following statistics represent the time elapsed between a job's key events:
 
@@ -90,14 +90,9 @@ done with the CPU.
 
 ##Known issues
 On some NCurses versions, valgrind might report some mem 
-blocks listed as "still reachable." If you look at the detailed report, this is all due to
-NCurses stuff. The only solution I was able to find is to uninstall and reconfigure your
-NCurses library........ Bleh.
+blocks listed as "still reachable."
 
 ##References
-
-####More about job processing
-
 http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf<br> 
 http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf<br>
 http://www.cs.tufts.edu/comp/111/<br>
