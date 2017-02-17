@@ -1,6 +1,6 @@
 
 ##Install
-(cd to src)<br>
+(```cd``` into ```src```)<br>
 Install:<br>
 ```$ make```<br>
 Run program:<br>
@@ -9,8 +9,8 @@ Uninstall (optional):<br>
 ```$ make clean```<br>
 
 ##CLI
--c: Chain Weighting Mode (see below)<br>
--q: Varying Quanta Mode (see below)<br>
+```-c```: Chain Weighting Mode (see below)<br>
+```-q```: Varying Quanta Mode (see below)<br>
 baseQuantum: Size of quantum (in jiffies) of the baseline priority<br>
 numPriorities: number of levels to the multilevel feedback queue (see below)
 
