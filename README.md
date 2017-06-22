@@ -1,5 +1,5 @@
 
-##Install
+## Install
 (```cd``` into ```src```)<br>
 Install:<br>
 ```$ make```<br>
@@ -8,17 +8,17 @@ Run program:<br>
 Uninstall (optional):<br>
 ```$ make clean```<br>
 
-##CLI
+## CLI
 ```-c```: Chain Weighting Mode (see below)<br>
 ```-q```: Varying Quanta Mode (see below)<br>
 ```baseQuantum```: Size of quantum (in jiffies) of the baseline priority<br>
 ```numPriorities```: number of levels to the multilevel feedback queue (see below)
 
-##Compatibility
+## Compatibility
 Update: Can't include thread and chrono for the latest clang on Fedora, need to
 update with libstdc++, this is only a problem in the Scheduler.cpp file.
 
-##The Multilevel Feedback Queue Scheduling Algorithm
+## The Multilevel Feedback Queue Scheduling Algorithm
 
 In SharkBatch, when jobs are created, a priority is never specified. All jobs start in
 the highest priority level queue. The intent is that short processes get a
@@ -38,14 +38,14 @@ Theory on effectiveness of varying quanta, round robin, etc:
 <br>
 http://dl.acm.org/citation.cfm?doid=321707.321717
 
-##Slice computation via quanta
+## Slice computation via quanta
 
 There are a number of different ways SharkBatch can compute the length of a slice per job called modes, which can be specified from the CLI. First, a baseline quantum must always be specified as the first numerical argument.<br>
 
 If no modes are selected, all slices are equal to the baseline quantum. Both modes can
 also be turned on at the same time, by specifying -cq):
 
-###Varying Quanta Mode
+### Varying Quanta Mode
 If "varying quanta mode" is selected by the -q flag, higher priority jobs receive a
 shorter slice. Each priority has a unique and decreasing quantum:
 
@@ -55,7 +55,7 @@ The difference between each priority level is constant. This is commonly used to
 priorities (see the articles above
 
 
-##Scheduling statistics reference
+## Scheduling statistics reference
 
 For a job, the following statistics represent the time elapsed between a job's key events:
 
@@ -74,7 +74,7 @@ avg turnaround time<br>
 avg turnaround per burst time = mean(turnaround/burst for each job)<br>
 Avg latency per burst time = mean(latency/burst for each job)
 
-##About inputting jobs and job dependencies
+## About inputting jobs and job dependencies
 
 New jobs are added synchronously between slices of processes. When adding a job, specify 
 a new PID, expected execution time, memory required, and dependencies. If a job is
@@ -88,11 +88,11 @@ use this number to make any decisions regarding time slices or prioritizing, mak
 possible to remove this variable and instead make jobs block or quit whenever they are
 done with the CPU.
 
-##Known issues
+## Known issues
 On some NCurses versions, valgrind might report some mem 
 blocks listed as "still reachable."
 
-##References
+## References
 http://www.scs.stanford.edu/07au-cs140/notes/l5.pdf<br> 
 http://inst.eecs.berkeley.edu/~cs162/sp11/sections/cs162-sp11-section5-answers.pdf<br>
 http://www.cs.tufts.edu/comp/111/<br>
