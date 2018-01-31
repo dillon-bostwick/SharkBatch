@@ -24,7 +24,7 @@ More MLFQ reading:<br>
 
 The [Solaris' scheduler](http://pages.cs.wisc.edu/~remzi/solaris-notes.pdf) is a great example of an earlier implementation that was met with success.<br>
 
-More [Queueing theory stuff](http://dl.acm.org/citation.cfm?doid=321707.321717) with some mathematical proofs behind the effectiveness of varying quanta, benefits over round-robin, etc.
+More [Queueing theory](http://dl.acm.org/citation.cfm?doid=321707.321717) with some mathematical proofs behind the effectiveness of varying quanta, benefits over round-robin, etc.
 <br>
 
 ## Slice computation via quanta
